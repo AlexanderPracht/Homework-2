@@ -295,13 +295,14 @@ social_media_stats <- social_media%>%
 
 
 ci_props <- social_media%>%
-  group_by(sex)%>%
-  summarise(sd=sd(snap_insta, na.rm = TRUE), 
-            count=n(), 
-            se=sqrt(p*(1-p)/n),
-            t_critical2 = qt(0.975, count-1),
-            lower2 = mean-t_critical2*se,
-            upper2 = mean+t_critical2*se)
+  group_by(sex, snap_insta)%>%
+  count(snap_insta)%>%
+  pivot_wider(names_from = snap_insta, values_from = n)%>%
+  mutate(mean = Yes/(Yes+No),
+         se = sqrt(mean*(1-mean)/(Yes+No)),
+         t_critical = qt(0.975,(Yes+No)-1),
+         lower = mean - t_critical*se,
+         upper = mean + t_critical*se)
 
 ```
 
@@ -318,6 +319,10 @@ There are 5 education levels in variable `degree` which, in ascneding order of y
 1. Using the CI formula for proportions, please construct two 95% CIs for `bachelor_graduate` vs whether they use (Yes) and don't (No) use twitter. 
 1. Do these two Confidence Intervals overlap?
 
+```{r}
+
+
+```
 
 ## Email usage
 
