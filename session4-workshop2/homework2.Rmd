@@ -351,8 +351,10 @@ Can we estimate the *population* parameter on time spent on email weekly?
 1. Would you expect a 99% confidence interval to be wider or narrower than the interval you calculated above? Explain your reasoning.
 
 ```{r}
+type(emailhr)
+
 email_data <- social_media%>%
-  mutate(email = if_else(emailmin==NA, NA, emailhr*60 + emailmin))
+  mutate(email = if_else(emailmin=="NA", emailmin, as.double(emailhr)*60 + as.double(emailmin)))
 ```
 
 # Trump's Approval Margins
@@ -428,11 +430,11 @@ knitr::include_graphics(here::here("session4-workshops/images", "trump_approval_
 Compare the confidence intervals for `week 15` (6-12 April 2020) and `week 34` (17-23 August 2020). Can you explain what's going on? One paragraph would be enough.
 ```{r}
 Trump_approval_margin %>% 
-  filter(enddate_week %in% c(15, 20), enddate_year == 2020) %>% 
-  select(c(enddate_year, enddate_week, low_net_approval, high_net_approval))
+  filter(week %in% c(15, 34), year == 2020) %>% 
+  select(c(year, week, low_net_approval, high_net_approval))
 
 ```
-Trump's net approval rate decreased greatly from 2020 week 15 to week 20, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net qpproval rate caused larger interval.
+Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net approval rate caused a higher standard error and therefore a larger confidence interval for week 34.
 
 
 # Gapminder revisited
