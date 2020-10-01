@@ -313,16 +313,33 @@ Can we estimate the *population* proportion of Twitter users by education level 
 
 There are 5 education levels in variable `degree` which, in ascneding order of years of education, are Lt high school, High School, Junior college, Bachelor, Graduate. 
 
-1. Turn `degree` from a character variable into a factor variable. Make sure the order is the correct one and that levels are not sorted alphabetically which is what R by default does. 
-1. Create a  new variable, `bachelor_graduate` that is *Yes* if the respondent has either a `Bachelor` or `Graduate` degree. As before, if the recorded value for either was NA, the value in your new variable should also be NA.
+1. Turn `degree` from a character variable into a factor variable. *Make sure the order is the correct one and that levels are not sorted alphabetically which is what R by default does*. 
+1. Create a  new variable, `bachelor_graduate` that is *Yes* if the respondent has either a `Bachelor` or `Graduate` degree. *As before, if the recorded value for either was NA, the value in your new variable should also be NA.*
 1. Calculate the proportion of `bachelor_graduate` who do (Yes) and who don't (No) use twitter. 
 1. Using the CI formula for proportions, please construct two 95% CIs for `bachelor_graduate` vs whether they use (Yes) and don't (No) use twitter. 
 1. Do these two Confidence Intervals overlap?
 
 ```{r}
-
+degree_factor <- c("Lt high school", "High School", "Junior college", "Bachelor", "Graduate")
+degree <- as.factor(degree_factor)
+twitter_education <- social_media %>%
+  mutate(bachelor_graduate= case_when(degree %in% c("Bachelor", "Graduate")~"Yes",
+                                      TRUE ~ "No"))%>%
+  filter(bachelor_graduate=="Yes")%>%
+  group_by(twitter)%>%
+  count(twitter)%>%
+  pivot_wider(names_from = twitter, values_from = n)%>%
+  mutate(proportion_yes = Yes/(Yes+No),
+         se=sqrt(proportion_yes*(1-proportion_yes)/(Yes+No)),
+         t_critical = qt(0.975, (Yes+No)-1),
+         lower_yes = proportion_yes - t_critical*se,
+         upper_yes = proportion_yes + t_critical*se,
+         lower_no = (1-proportion_yes) - t_critical*se,
+         upper_no = (1-proportion_yes) + t_critical*se)
 
 ```
+No the 2 intervals do not overlap.
+
 
 ## Email usage
 
@@ -333,6 +350,10 @@ Can we estimate the *population* parameter on time spent on email weekly?
 1. Using the `infer` package, calculate a 95% bootstrap confidence interval for the mean amount of time Americans spend on email weekly. Interpret this interval in context of the data, reporting its endpoints in “humanized” units (e.g. instead of 108 minutes, report 1 hr and 8 minutes). If you get a result that seems a bit odd, discuss why you think this might be the case.
 1. Would you expect a 99% confidence interval to be wider or narrower than the interval you calculated above? Explain your reasoning.
 
+```{r}
+email_data <- social_media%>%
+  mutate(email = if_else(emailmin==NA, NA, emailhr*60 + emailmin))
+```
 
 # Trump's Approval Margins
 
