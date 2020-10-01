@@ -1,6 +1,6 @@
 ---
 title: "Session 4: Homework 2"
-author: "Your name goes here"
+author: "Group 29"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -126,7 +126,8 @@ ggplot(tidyweather, aes(x=date, y=delta))+
   theme_bw() +
   facet_wrap(~month)+
   labs (
-    title = "Weather Anomalies for each month"
+    title= "The effect of increasing temperature pronounced in all months"
+    ,subtitle = "Weather Anomalies for each month"
   )
 ```
 
@@ -161,7 +162,8 @@ ggplot(comparison, aes(x=delta, fill=interval))+
   geom_density(alpha=0.2) +   #density plot with tranparency set to 20%
   theme_bw() +                #theme
   labs (
-    title = "Density Plot for Monthly Temperature Anomalies",
+    title = "Delta becoing more positive over the decades",
+    subtitle = "Density Plot for Monthly Temperature Anomalies",
     y     = "Density"         #changing y-axis label to sentence case
   )
 
@@ -184,12 +186,13 @@ ggplot(average_annual_anomaly, aes(x=Year, y= annual_average_delta))+
   geom_point()+
   
   #Fit the best fit line, using LOESS method
-  geom_smooth() +
+  geom_smooth(method = "loess") +
   
   #change to theme_bw() to have white background + black frame around plot
   theme_bw() +
   labs (
-    title = "Average Yearly Anomaly",
+    title="Average yearly anomaly increasing exponentially since the 1960s",
+    subtitle = "Average Yearly Anomaly",
     y     = "Average Annual Delta"
   )                         
 
@@ -242,9 +245,13 @@ data_infer <- comparison %>%
 
 percentile_ci <- data_infer %>%
   get_confidence_interval(level=0.95, type="percentile")
+
+percentile_ci
 ```
 
 > What is the data showing us? Please type your answer after (and outside!) this blockquote. You have to explain what you have done, and the interpretation of the result. One paragraph max, please!
+
+The data shows us (for both methods, with the formula as well as with the infer package) that we can be 95% sure that the real mean of the population of temperature differences lies between 0.917 and 1.02.
 
 # General Social Survey (GSS)
 
