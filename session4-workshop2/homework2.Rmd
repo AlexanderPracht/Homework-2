@@ -435,10 +435,10 @@ indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
 library(wbstats)
 
-worldbank_data <- wb_data(country="countries_only", #countries only- no aggregates like Latin America, Europe, etc.
-                          indicator = indicators, 
-                          start_date = 1960, 
-                          end_date = 2016)
+worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
+  select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
+        
+                         
 
 # get a dataframe of information regarding countries, indicators, sources, regions, indicator topics, lending types, income levels,  from the World Bank API 
 countries <-  wbstats::wb_cachelist$countries
@@ -446,6 +446,25 @@ countries <-  wbstats::wb_cachelist$countries
 ```
 
 You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one. You may need to tidy your data first and then perform [join operations](http://r4ds.had.co.nz/relational-data.html). Think about what type makes the most sense **and explain why you chose it**.
+
+I use left join, because left join enables to preserve the original observations even when there isn' a match. The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
+```{r}
+life_expectancy_1 <- life_expectancy %>% 
+  pivot_longer(cols=2:302, 
+               names_to="date", 
+               values_to = "life_expectancy") %>% 
+  filter(date>=1960& date<=2016) %>% 
+  mutate(date=as.numeric(date))
+
+hiv_1<-hiv %>% 
+  pivot_longer(cols=2:34, 
+               names_to="date", 
+               values_to = "hiv") %>% 
+  mutate(date=as.numeric(date))
+
+join<- left_join(worldbank_data,life_expectancy_1)
+join<- left_join(join,hiv_1)
+```
 
 1. What is the relationship between HIV prevalence and life expectancy? Generate a scatterplot with a smoothing line to report your results. You may find faceting useful
 1. What is the relationship between fertility rate and GDP per capita? Generate a scatterplot with a smoothing line to report your results. You may find facetting by region useful
