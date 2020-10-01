@@ -291,7 +291,7 @@ ci_props <- social_media%>%
   group_by(sex)%>%
   summarise(sd=sd(snap_insta, na.rm = TRUE), 
             count=n(), 
-            se=sqrt(p*(1-p)/n) 
+            se=sqrt(p*(1-p)/n),
             t_critical2 = qt(0.975, count-1),
             lower2 = mean-t_critical2*se,
             upper2 = mean+t_critical2*se)
