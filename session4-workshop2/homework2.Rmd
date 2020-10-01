@@ -354,7 +354,7 @@ Can we estimate the *population* parameter on time spent on email weekly?
 type(emailhr)
 
 email_data <- social_media%>%
-  mutate(email = if_else(emailmin=="NA", emailmin, as.double(emailhr)*60 + as.double(emailmin)))
+  mutate(email = ifelse(emailmin=="NA", "NA", as.double(emailhr)*60 + as.double(emailmin)))
 ```
 
 # Trump's Approval Margins
