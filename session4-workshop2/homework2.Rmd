@@ -487,15 +487,50 @@ life_expectancy_1 <- life_expectancy %>%
 hiv_1<-hiv %>% 
   pivot_longer(cols=2:34, 
                names_to="date", 
-               values_to = "hiv") %>% 
+               values_to = "hiv_prevalence") %>% 
   mutate(date=as.numeric(date))
 
-join<- left_join(worldbank_data,life_expectancy_1)
+country_1<- countries %>% 
+  select(country,region)
+
+join<- left_join(worldbank_data,country_1)
+join<- left_join(join,life_expectancy_1)
 join<- left_join(join,hiv_1)
 ```
 
 1. What is the relationship between HIV prevalence and life expectancy? Generate a scatterplot with a smoothing line to report your results. You may find faceting useful
+
+For most regions, including East Asia & Pacific, Lattin America & Carribean, Middle East & North Africa, Sub-Seharan Africa, there exists a negative relationship between HIV prevalence and life expectancy.
+In North America and South Asia, the relaionship is not obvious, since the linear regression lines are nearly flat.
+In Europe & Central Asia, the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy.
+```{r}
+ggplot(join,aes(x=hiv_prevalence, y = life_expectancy))+
+  geom_point() +
+  facet_wrap(~region,scales = "free_x") +
+  geom_smooth(method = "lm") +
+  scale_y_continuous(breaks = c(0,50,100),limits=c(0,100)) +
+  labs(title = "Relationship between HIV prevalence and Life expectancy", 
+       x = "HIV prevalence",
+       y = "Life expectancy") +
+  theme(legend.position = "none") +
+  theme_bw()
+```
+
 1. What is the relationship between fertility rate and GDP per capita? Generate a scatterplot with a smoothing line to report your results. You may find facetting by region useful
+
+For all regions, the relationships between fertility rate and GDP per capota are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
+```{r}
+ggplot(join,aes(x=SP.DYN.TFRT.IN, y = NY.GDP.PCAP.KD))+
+  geom_point() +
+  facet_wrap(~region,scales = "free_y") +
+  geom_smooth(method = "lm") +
+  labs(title = "Relationship between fertility rate  and GDP per capita", 
+       x = "Fertility Rate",
+       y = "GDP Per Capita") +
+  theme(legend.position = "none") +
+  theme_bw()
+```
+
 1. Which regions have the most observations with missing HIV data? Generate a bar chart (`geom_col()`), in descending order.
 1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
 1. Is there a relationship between primary school enrollment and fertility rate?
