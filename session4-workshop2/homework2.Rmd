@@ -547,6 +547,24 @@ ggplot(missing_HIV,aes(y=hiv_NA,x=reorder(region,-hiv_NA)))+
 ```
 
 1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
+```{r}
+mortality<-join %>% 
+  select(country,date,SH.DYN.MORT,region) %>% 
+  group_by(country) %>% 
+  mutate(change_mortality=SH.DYN.MORT[which(date==2016)]-SH.DYN.MORT[which(date==1960)]) %>% 
+  select(country,region,change_mortality) %>% 
+  filter (! duplicated(country))
+Top5_mort_improvement<-mortality %>% 
+  group_by(region) %>% 
+  arrange (desc(-change_mortality)) %>% 
+  slice(1:5)
+Top5_mort_improvement
+Least5_mort_improvement<-mortality %>% 
+  group_by(region) %>% 
+  arrange (-change_mortality) %>% 
+  slice(1:5)
+Least5_mort_improvement
+```
 
 1. Is there a relationship between primary school enrollment and fertility rate?
 
