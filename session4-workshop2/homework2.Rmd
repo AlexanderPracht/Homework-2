@@ -568,6 +568,20 @@ Least5_mort_improvement
 
 1. Is there a relationship between primary school enrollment and fertility rate?
 
+Yes, there is a negative relationship between primary school enrollment rate and fertility rate. The higher the fertility rate is, the lower the primary school enrollment rate. 
+However, the relationship is not obvious in Europe & Central Asia, and North America, probably becasue the familities in these two regions are wealthy enough to afford children's education, even with more children.
+```{r}
+ggplot(join,aes(x=SE.PRM.NENR, y =SP.DYN.TFRT.IN ))+
+  geom_point() +
+  facet_wrap(~region) +
+  geom_smooth(method = "lm") +
+  labs(title = "Relationship between primary school enrollment rate and fertility rate", 
+       x = "Primary school enrollment rate",
+       y = "Fertility rate") +
+  theme(legend.position = "none") +
+  theme_bw()
+```
+
 
 # Challenge 1: CDC COVID-19 Public Use Data
 
