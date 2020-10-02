@@ -532,7 +532,22 @@ ggplot(join,aes(x=SP.DYN.TFRT.IN, y = NY.GDP.PCAP.KD))+
 ```
 
 1. Which regions have the most observations with missing HIV data? Generate a bar chart (`geom_col()`), in descending order.
+
+Europe & Central Asia has the most observations with missing HIV data.
+```{r}
+missing_HIV<-join %>% 
+  group_by(region) %>% 
+  summarise(hiv_NA=sum(is.na(hiv_prevalence))) %>% 
+  arrange(desc(hiv_NA))
+ggplot(missing_HIV,aes(y=hiv_NA,x=reorder(region,-hiv_NA)))+
+  geom_col()+
+  theme_economist() +
+  labs(title="Missing HIV Data in Different Regions", y="Missing HIV Data", x="Region") 
+  
+```
+
 1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
+
 1. Is there a relationship between primary school enrollment and fertility rate?
 
 
