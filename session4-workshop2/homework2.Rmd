@@ -342,25 +342,67 @@ There are 5 education levels in variable `degree` which, in ascneding order of y
 1. Do these two Confidence Intervals overlap?
 
 ```{r}
-degree_factor <- c("Lt high school", "High School", "Junior college", "Bachelor", "Graduate")
-degree <- as.factor(degree_factor)
-twitter_education <- social_media %>%
-  mutate(bachelor_graduate= case_when(degree %in% c("Bachelor", "Graduate")~"Yes",
-                                      TRUE ~ "No"))%>%
-  filter(bachelor_graduate=="Yes")%>%
-  group_by(twitter)%>%
-  count(twitter)%>%
-  pivot_wider(names_from = twitter, values_from = n)%>%
-  mutate(proportion_yes = Yes/(Yes+No),
-         se=sqrt(proportion_yes*(1-proportion_yes)/(Yes+No)),
-         t_critical = qt(0.975, (Yes+No)-1),
-         lower_yes = proportion_yes - t_critical*se,
-         upper_yes = proportion_yes + t_critical*se,
-         lower_no = (1-proportion_yes) - t_critical*se,
-         upper_no = (1-proportion_yes) + t_critical*se)
+twitter_pop <- gss %>% 
+  mutate(degree = factor(degree, order = TRUE, levels = c("Lt high school", "High school", "Junior college", "Bachelor", "Graduate")),
+         bachelor_graduate = if_else(degree >= "Bachelor", "Yes", "No"))
+
+twitter_pop
 
 ```
 
+```{r}
+twitter_bachelor <- twitter_pop %>% 
+  filter(bachelor_graduate == "Yes", twitter != "NA") %>% 
+  mutate(twitter_num = twitter == "Yes") %>% 
+  group_by(bachelor_graduate, twitter) %>% 
+  count()
+
+twitter_bachelor
+```
+```{r}
+twitter_bachelor <- twitter_pop %>% 
+  filter(bachelor_graduate != "NA", twitter != "NA") %>% 
+  mutate(twitter_num = twitter == "Yes") %>% 
+  group_by(bachelor_graduate, twitter) %>% 
+  count() %>% 
+  pivot_wider(names_from = twitter, values_from = n) %>% 
+  mutate(prop_twitter_users = Yes /(Yes+No),
+         prop_notwitter_users = No /(Yes+No))
+
+twitter_bachelor
+```
+```{r}
+graduate_ci <- twitter_pop %>% 
+  filter(twitter != "NA", bachelor_graduate != "NA") %>% 
+  mutate(bachelor_graduate_adj = bachelor_graduate == "Yes") %>% 
+  group_by(twitter) %>% 
+  summarize(count = n(),
+            prop_graduate = mean(bachelor_graduate_adj),
+            sd_prop = sd(bachelor_graduate_adj),
+            t_critical_95 = qt(0.975, count-1),
+            lower_bound_95 = prop_graduate - t_critical_95 * (sd_prop/(count)^0.5),
+            upper_bound_95 = prop_graduate + t_critical_95 * (sd_prop/(count)^0.5)
+            )
+
+
+graduate_ci%>%
+  
+  select(lower_bound_95,upper_bound_95)
+```
+```{r}
+ggplot(graduate_ci, 
+       aes(twitter, prop_graduate, ymax = upper_bound_95, ymin = lower_bound_95))+
+  geom_errorbar(aes(width = 0.2), size = 1) + #other way would be errorbar
+  geom_point(size = 5) +
+  theme_bw() +
+  #xlim(0.2, 0.8) +
+  labs(title = "Confidence intervals for 'bachelor_graduate' do not overlap",
+       subtitle = "Proportion of twitter users that are either graduate or bachelor",
+       x="Twitter user? (Yes/No)", y= "Proportion of bachelors and graduates") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_rect(aes(xmin = 0, xmax = 3, ymin = graduate_ci$upper_bound_95[1], ymax=graduate_ci$lower_bound_95[2]), fill = "red", alpha = 0.2, size=0.1) +
+  NULL
+```
 
 No the 2 intervals do not overlap.
 
@@ -375,8 +417,73 @@ Can we estimate the *population* parameter on time spent on email weekly?
 1. Would you expect a 99% confidence interval to be wider or narrower than the interval you calculated above? Explain your reasoning.
 
 ```{r}
-email_data <- social_media%>%
-  mutate(email = ifelse(emailmin=="NA", "NA", as.double(emailhr)*60 + as.double(emailmin)))
+#creating new variable
+email_pop <- gss %>% 
+  mutate(email_in_min = as.numeric(hours(emailhr) + minutes(emailmin),"minutes"))
+
+#summarizing new variable
+email_pop %>% filter(!is.na(email_in_min)) %>% 
+  summarize(mean = mean(email_in_min), median = median(email_in_min))
+
+```
+```{r}
+email_pop %>% 
+  filter(!is.na(email_in_min)) %>% 
+  summarize(count = n(),
+            mean_email_time = mean(email_in_min, na.rm = TRUE),
+            median_email_time = median(email_in_min, na.rm = TRUE))
+```
+
+
+```{r}
+#density plot
+
+ggplot(email_pop, aes(x = email_in_min))+
+  geom_density(fill = "grey") +
+  theme_bw()+
+  geom_vline(aes(xintercept = mean(email_pop$email_in_min, na.rm = TRUE), color="mean"), size = 1, linetype = 2) +
+  geom_vline(aes(xintercept = median(email_pop$email_in_min, na.rm = TRUE), color="median"), size = 1, linetype = 2) +
+  scale_color_manual(name = "statistics", values = c(mean = "red", median = "blue")) +
+  labs(title = "Few outliers make the disrtibution heavily right-skewed",
+       subtitle = "Density plot for amount of minutes respondents spent on email",
+       x = "Time spent on emails (in min)",
+       y = "Density") + 
+  geom_text(mapping = aes(x = mean(email_pop$email_in_min, na.rm = TRUE),
+                          y = 0,
+                          label = round(mean(email_pop$email_in_min, na.rm = TRUE),0), 
+                          hjust = 0, vjust = -0.5, angle=90),colour="red") +
+    geom_text(mapping = aes(x = median(email_pop$email_in_min, na.rm = TRUE),
+                          y = 0,
+                          label = round(median(email_pop$email_in_min, na.rm = TRUE),0), 
+                          hjust = 0, vjust = -0.5, angle=90),colour="blue") +
+  
+  #scale_x_log10() +
+  NULL
+```
+
+
+```{r}
+library(infer)
+
+set.seed(1234)
+
+point_estimate = mean(email_pop$email_in_min, na.rm = TRUE)
+
+
+
+email_pop_ci <- email_pop %>% 
+  specify(formula = email_in_min ~ NULL) %>% 
+  generate(reps = 1000) %>% 
+  calculate(stat = "mean") %>% 
+  get_ci(type = "se", point_estimate = point_estimate) %>% 
+  mutate(point_estimate = point_estimate)
+  
+
+email_pop_ci %>% 
+  mutate(lower_ci = hms::as.hms(lower_ci),
+         upper_ci = hms::as.hms(upper_ci),
+         point_estimate = hms::as.hms(point_estimate)
+         )
 ```
 
 # Trump's Approval Margins
@@ -484,7 +591,7 @@ indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
 library(wbstats)
 
-worldbank_data <- read_csv(here::here("session4-workshop2/data","worldbank_data.csv")) %>% 
+worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
   select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
         
                          
@@ -498,25 +605,22 @@ You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) int
 
 I use left join, because left join enables to preserve the original observations even when there isn' a match. The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
 ```{r}
-life_expectancy_1 <- life_expectancy %>% 
-  pivot_longer(cols=2:302, 
-               names_to="date", 
-               values_to = "life_expectancy") %>% 
-  filter(date>=1960& date<=2016) %>% 
-  mutate(date=as.numeric(date))
+hiv_tidy <- hiv %>% 
+  pivot_longer(cols=c('1979':'2011'),names_to = "date",values_to = "hiv_percentage")
+hiv_tidy$date <- as.numeric(hiv_tidy$date)
 
-hiv_1<-hiv %>% 
-  pivot_longer(cols=2:34, 
-               names_to="date", 
-               values_to = "hiv_prevalence") %>% 
-  mutate(date=as.numeric(date))
+life_expectancy_tidy <- life_expectancy %>% 
+  pivot_longer(cols=c('1800':'2100'),names_to = "date",values_to = "life_exp")
+life_expectancy_tidy$date <- as.numeric(life_expectancy_tidy$date)  
 
-country_1<- countries %>% 
-  select(country,region)
+  
+region_worldbank_data <- left_join(countries, worldbank_data, by = "country") %>%
+  filter(region != "Aggregates")
 
-join<- left_join(worldbank_data,country_1)
-join<- left_join(join,life_expectancy_1)
-join<- left_join(join,hiv_1)
+countries_data <- full_join(region_worldbank_data, life_expectancy_tidy, by = c("country", "date"))
+
+countries_data <- full_join(countries_data, hiv_tidy, by = c("country", "date")) %>%
+  filter(!is.na(region))
 ```
 
 1. What is the relationship between HIV prevalence and life expectancy? Generate a scatterplot with a smoothing line to report your results. You may find faceting useful
@@ -525,86 +629,186 @@ For most regions, including East Asia & Pacific, Lattin America & Carribean, Mid
 In North America and South Asia, the relaionship is not obvious, since the linear regression lines are nearly flat.
 In Europe & Central Asia, the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy.
 ```{r}
-ggplot(join,aes(x=hiv_prevalence, y = life_expectancy))+
-  geom_point() +
-  facet_wrap(~region,scales = "free_x") +
-  geom_smooth(method = "lm") +
-  scale_y_continuous(breaks = c(0,50,100),limits=c(0,100)) +
-  labs(title = "Relationship between HIV prevalence and Life expectancy", 
-       x = "HIV prevalence",
-       y = "Life expectancy") +
-  theme(legend.position = "none") +
-  theme_bw()
+countries_hiv_lifeexp <- countries_data %>%
+  filter(date >= 1960, #very few datapoint before 1990
+         date <= 2011) %>% #No datapoint for hiv prevalence after 2011
+  group_by(country, region) %>%
+  summarise(mean_hiv = mean(hiv_percentage, na.rm = TRUE),
+            mean_life_exp = mean(life_exp, na.rm = TRUE)) %>%
+  na.omit()
+
+  ggplot(countries_hiv_lifeexp, aes(x = mean_hiv, y = mean_life_exp))+
+  geom_point()+
+  geom_smooth()+
+  facet_wrap(~region,scales="free")+ #faceting by countries will make too many plots and it can't show the whole trend
+  theme_bw()+
+  labs(x = "HIV Prevalence", 
+       y = "Life Expectancy", 
+       title = "Relationship between HIV Prevalence and Life Expectancy",
+       subtitle = "Between 1960 and 2011")
 ```
 
 1. What is the relationship between fertility rate and GDP per capita? Generate a scatterplot with a smoothing line to report your results. You may find facetting by region useful
 
 For all regions, the relationships between fertility rate and GDP per capota are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
 ```{r}
-ggplot(join,aes(x=SP.DYN.TFRT.IN, y = NY.GDP.PCAP.KD))+
-  geom_point() +
-  facet_wrap(~region,scales = "free_y") +
-  geom_smooth(method = "lm") +
-  labs(title = "Relationship between fertility rate  and GDP per capita", 
-       x = "Fertility Rate",
-       y = "GDP Per Capita") +
-  theme(legend.position = "none") +
-  theme_bw()
+ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
+  geom_point(size = 0.9)+
+  geom_smooth()+
+  facet_wrap(~region,scale="free")+
+  theme_bw()+
+  labs(x = "GDP per Capita", 
+       y = "Fertility Rate", 
+       title = "Relationship between Fertility Rate and GDP per Capita")
 ```
 
 1. Which regions have the most observations with missing HIV data? Generate a bar chart (`geom_col()`), in descending order.
 
 Europe & Central Asia has the most observations with missing HIV data.
 ```{r}
-missing_HIV<-join %>% 
-  group_by(region) %>% 
-  summarise(hiv_NA=sum(is.na(hiv_prevalence))) %>% 
-  arrange(desc(hiv_NA))
-ggplot(missing_HIV,aes(y=hiv_NA,x=reorder(region,-hiv_NA)))+
+countries_region_na <- countries_data %>%
+  group_by(region) %>%
+  summarise(missing_hiv = sum(!is.na(hiv_percentage)))
+
+ggplot(countries_region_na, aes(x = missing_hiv, y = reorder(region, missing_hiv)))+
   geom_col()+
-  theme_economist() +
-  labs(title="Missing HIV Data in Different Regions", y="Missing HIV Data", x="Region") 
+  theme_bw()+
+  labs(x = "Region",
+       y = "Number of Missing HIV Data",
+       title = "Number of Missing HIV Data across Different Regions")
   
 ```
 
 1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
 ```{r}
-mortality<-join %>% 
-  select(country,date,SH.DYN.MORT,region) %>% 
-  group_by(country) %>% 
-  mutate(change_mortality=SH.DYN.MORT[which(date==2016)]-SH.DYN.MORT[which(date==1960)]) %>% 
-  select(country,region,change_mortality) %>% 
-  filter (! duplicated(country))
-Top5_mort_improvement<-mortality %>% 
-  group_by(region) %>% 
-  arrange (desc(-change_mortality)) %>% 
-  slice(1:5)
-Top5_mort_improvement
-Least5_mort_improvement<-mortality %>% 
-  group_by(region) %>% 
-  arrange (-change_mortality) %>% 
-  slice(1:5)
-Least5_mort_improvement
+countries_region_mortality <- countries_data %>%
+  group_by(region,date) %>% 
+  summarise(mean_mortality = mean(SH.DYN.MORT, na.rm = TRUE)) #drop NA to find mean, otherwise returns NA
+
+ggplot(countries_region_mortality, aes(x=date,y = mean_mortality ))+
+  geom_line()+
+  facet_wrap(~region)+ 
+  theme_bw()+
+  labs(x="Date",y = " Mortality Per 1000 for Under 5",
+       title = " Mortality Rate for Under 5 changed by region")
 ```
+```{r}
+countries_mortality_improvement <- select(countries_data, "country", "date", "region", "SH.DYN.MORT") %>%
+  na.omit()%>% 
+  group_by(country, region) %>%
+  mutate(first_rate = first(SH.DYN.MORT), 
+         last_rate = last(SH.DYN.MORT)) %>%
+  summarise(improvement_rate = mean((first_rate - last_rate)/first_rate))
+  
+
+south_asia <- countries_mortality_improvement %>%
+  filter(region == "South Asia") %>%
+  arrange(desc(improvement_rate))
+south_asia_top5 <-  south_asia %>% 
+  head(5)
+south_asia_tail5 <-  south_asia %>% 
+  tail(5)
+south_asia_top5
+```
+```{r}
+south_asia_tail5
+```
+```{r}
+east_asia_pacific <- countries_mortality_improvement %>%
+  filter(region == "East Asia & Pacific") %>%
+  arrange(desc(improvement_rate))
+east_asia_pacific_top5 <-  east_asia_pacific %>% 
+  head(5)
+east_asia_pacific_tail5 <-  east_asia_pacific %>% 
+  tail(5)
+east_asia_pacific_top5
+```
+```{r}
+east_asia_pacific_tail5
+```
+```{r}
+europe_central_asia <- countries_mortality_improvement %>%
+  filter(region == "Europe & Central Asia") %>%
+  arrange(desc(improvement_rate))
+europe_central_asia_top5 <-  europe_central_asia %>% 
+  head(5)
+europe_central_asia_tail5 <-  europe_central_asia %>% 
+  tail(5)
+europe_central_asia_top5
+```
+```{r}
+europe_central_asia_tail5
+```
+```{r}
+latin_america_caribbean <- countries_mortality_improvement %>%
+  filter(region == "Latin America & Caribbean") %>%
+  arrange(desc(improvement_rate))
+latin_america_caribbean_top5 <-  latin_america_caribbean %>% 
+  head(5)
+latin_america_caribbean_tail5 <-  latin_america_caribbean %>% 
+  tail(5)
+latin_america_caribbean_top5
+```
+
+```{r}
+latin_america_caribbean_tail5
+```
+```{r}
+middle_east_north_africa <- countries_mortality_improvement %>%
+  filter(region == "Middle East & North Africa") %>%
+  arrange(desc(improvement_rate))
+middle_east_north_africa_top5 <- middle_east_north_africa %>% 
+  head(5)
+middle_east_north_africa_tail5 <- middle_east_north_africa %>% 
+  tail(5)
+middle_east_north_africa_top5
+```
+```{r}
+middle_east_north_africa_tail5 
+```
+```{r}
+north_america <- countries_mortality_improvement %>%
+  filter(region == "North America") %>%
+  arrange(desc(improvement_rate))
+north_america_top5 <-  north_america %>% 
+  head(5)
+north_america_tail5 <-  north_america %>% 
+  tail(5)
+north_america_top5
+```
+```{r}
+north_america_tail5 
+```
+```{r}
+subsaharan_africa <- countries_mortality_improvement %>%
+  filter(region == "Sub-Saharan Africa") %>%
+  arrange(desc(improvement_rate))
+subsaharan_africa_top5 <-  subsaharan_africa %>% 
+  head(5)
+subsaharan_africa_tail5 <-  subsaharan_africa %>% 
+  tail(5)
+subsaharan_africa_top5
+```
+```{r}
+subsaharan_africa_tail5
+```
+
 
 1. Is there a relationship between primary school enrollment and fertility rate?
 
 Yes, there is a negative relationship between primary school enrollment rate and fertility rate. The higher the fertility rate is, the lower the primary school enrollment rate. 
 However, the relationship is not obvious in Europe & Central Asia, and North America, probably becasue the familities in these two regions are wealthy enough to afford children's education, even with more children.
 ```{r}
-ggplot(join,aes(x=SE.PRM.NENR, y =SP.DYN.TFRT.IN ))+
-  geom_point() +
-  facet_wrap(~region) +
-  geom_smooth(method = "lm") +
-  labs(title = "Relationship between primary school enrollment rate and fertility rate", 
-       x = "Primary school enrollment rate",
-       y = "Fertility rate") +
-  theme(legend.position = "none") +
-  theme_bw()
+ggplot(countries_data, aes(x = SP.DYN.TFRT.IN, y = SE.PRM.NENR))+
+  geom_point(size = 0.9)+
+  geom_smooth()+
+  facet_wrap(~region)+
+  theme_bw()+
+  labs(x = "Fertility Rate", 
+       y = "Primary School Enrollment", 
+       title = "Relationship between Fertility Rate and Primary School Enrollment")
 ```
 
-
-# Challenge 1: CDC COVID-19 Public Use Data
 
 # Challenge 1: CDC COVID-19 Public Use Data
 
