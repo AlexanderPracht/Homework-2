@@ -984,6 +984,7 @@ per month there are no clear outliers. Mean allows to capture the whole sample, 
 It results in a more representing calculation of expected number of bikes hired in each period.
 
 
+
 # Details
 
 - Who did you collaborate with: Matias, Philipp, Alex, Sena, Shengwei, Linda
