@@ -525,15 +525,14 @@ p <- Trump_approval_margin %>%
 p
 ```
 
-<<<<<<< HEAD
+
 You can facet by year, and add an orange line at zero. Your plot should look like this:
 
 ```{r trump_margins, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
 ```
-=======
+
 ## Compare Confidence Intervals for week 15 and week 20 in 2020
->>>>>>> c328db46431fb29c4ccd87fe9303a735a867bb2c
 
 ```{r}
 Trump_approval_margin %>% 
@@ -559,6 +558,8 @@ Recall the `gapminder` data frame from the gapminder package. That data frame co
 
 You must use the `wbstats` package to download data from the World Bank. The relevant World Bank indicators are `SP.DYN.TFRT.IN`, `SE.PRM.NENR`, `NY.GDP.PCAP.KD`, and `SH.DYN.MORT`
 
+
+
 ```{r, get_data, cache=TRUE}
 
 # load gapminder HIV data
@@ -581,9 +582,9 @@ countries <-  wbstats::wb_cachelist$countries
 
 ```
 
-You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one. You may need to tidy your data first and then perform [join operations](http://r4ds.had.co.nz/relational-data.html). Think about what type makes the most sense **and explain why you chose it**.
+You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one. You may need to tidy your data first and then perform [join operations](http://r4ds.had.co.nz/relational-data.html).
 
-I use left join, because left join enables to preserve the original observations even when there isn' a match. The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
+I use left_join(), because left_join() enables to preserve the original observations even when there isn't a match. What's more, left_join() is faster than merge(). The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
 ```{r}
 hiv_tidy <- hiv %>% 
   pivot_longer(cols=c('1979':'2011'),names_to = "date",values_to = "hiv_percentage")
@@ -605,9 +606,11 @@ countries_data <- full_join(countries_data, hiv_tidy, by = c("country", "date"))
 
 1. What is the relationship between HIV prevalence and life expectancy? Generate a scatterplot with a smoothing line to report your results. You may find faceting useful
 
-For most regions, including East Asia & Pacific, Lattin America & Carribean, Middle East & North Africa, Sub-Seharan Africa, there exists a negative relationship between HIV prevalence and life expectancy.
-In North America and South Asia, the relaionship is not obvious, since the linear regression lines are nearly flat.
-In Europe & Central Asia, the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy.
+For most regions, including East Asia & Pacific, Latin America & Caribbean, Middle East & North Africa, there exists a negative relationship between HIV prevalence and life expectancy.
+In Europe & Central Asia and Sub-Saharan Africa the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy. However this trend seems not to be significant.
+In North America there are only two countries and therefore it is difficult to determine a trend.
+South Asia shows also a negative trend, however also here it doesn't seem to be significant.
+
 ```{r}
 countries_hiv_lifeexp <- countries_data %>%
   filter(date >= 1960, #very few datapoint before 1990
@@ -619,22 +622,22 @@ countries_hiv_lifeexp <- countries_data %>%
 
   ggplot(countries_hiv_lifeexp, aes(x = mean_hiv, y = mean_life_exp))+
   geom_point()+
-  geom_smooth()+
+  geom_smooth(method = lm)+
   facet_wrap(~region,scales="free")+ #faceting by countries will make too many plots and it can't show the whole trend
   theme_bw()+
   labs(x = "HIV Prevalence", 
-       y = "Life Expectancy", 
+       y = "Life Expectancy\n", 
        title = "Relationship between HIV Prevalence and Life Expectancy",
        subtitle = "Between 1960 and 2011")
 ```
 
 1. What is the relationship between fertility rate and GDP per capita? Generate a scatterplot with a smoothing line to report your results. You may find facetting by region useful
 
-For all regions, the relationships between fertility rate and GDP per capota are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
+For all regions, the relationships between fertility rate and GDP per capita are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
 ```{r}
 ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
   geom_point(size = 0.9)+
-  geom_smooth()+
+  geom_smooth(method=lm)+
   facet_wrap(~region,scale="free")+
   theme_bw()+
   labs(x = "GDP per Capita", 
@@ -645,7 +648,7 @@ ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
 1. Which regions have the most observations with missing HIV data? Generate a bar chart (`geom_col()`), in descending order.
 
 Europe & Central Asia has the most observations with missing HIV data.
-```{r}
+```{r, bar_chart_missing_HIV}
 countries_region_na <- countries_data %>%
   group_by(region) %>%
   summarise(missing_hiv = sum(!is.na(hiv_percentage)))
@@ -660,7 +663,7 @@ ggplot(countries_region_na, aes(x = missing_hiv, y = reorder(region, missing_hiv
 ```
 
 1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
-```{r}
+```{r, mortality_regions}
 countries_region_mortality <- countries_data %>%
   group_by(region,date) %>% 
   summarise(mean_mortality = mean(SH.DYN.MORT, na.rm = TRUE)) #drop NA to find mean, otherwise returns NA
@@ -670,17 +673,18 @@ ggplot(countries_region_mortality, aes(x=date,y = mean_mortality ))+
   facet_wrap(~region)+ 
   theme_bw()+
   labs(x="Date",y = " Mortality Per 1000 for Under 5",
-       title = " Mortality Rate for Under 5 changed by region")
+       title = " Mortality rate for under 5 changed by region")
 ```
-```{r}
+```{r, countries_mortality_improvements}
 countries_mortality_improvement <- select(countries_data, "country", "date", "region", "SH.DYN.MORT") %>%
   na.omit()%>% 
   group_by(country, region) %>%
   mutate(first_rate = first(SH.DYN.MORT), 
          last_rate = last(SH.DYN.MORT)) %>%
   summarise(improvement_rate = mean((first_rate - last_rate)/first_rate))
-  
-
+```
+## Asia top 5 and flop 5 countries in mortality improvement
+```{r, Asia}
 south_asia <- countries_mortality_improvement %>%
   filter(region == "South Asia") %>%
   arrange(desc(improvement_rate))
@@ -693,7 +697,9 @@ south_asia_top5
 ```{r}
 south_asia_tail5
 ```
-```{r}
+
+## East Asia & Pacific top 5 and flop 5 countries in mortality improvement
+```{r, east_asia}
 east_asia_pacific <- countries_mortality_improvement %>%
   filter(region == "East Asia & Pacific") %>%
   arrange(desc(improvement_rate))
@@ -706,6 +712,7 @@ east_asia_pacific_top5
 ```{r}
 east_asia_pacific_tail5
 ```
+## Europe & Central Asia top 5 and flop 5 countries in mortality improvement
 ```{r}
 europe_central_asia <- countries_mortality_improvement %>%
   filter(region == "Europe & Central Asia") %>%
@@ -719,6 +726,7 @@ europe_central_asia_top5
 ```{r}
 europe_central_asia_tail5
 ```
+## Latin America & Caribbean top 5 and flop 5 countries in mortality improvement
 ```{r}
 latin_america_caribbean <- countries_mortality_improvement %>%
   filter(region == "Latin America & Caribbean") %>%
@@ -733,6 +741,7 @@ latin_america_caribbean_top5
 ```{r}
 latin_america_caribbean_tail5
 ```
+## Middle East & North Africa top 5 and flop 5 countries in mortality improvement
 ```{r}
 middle_east_north_africa <- countries_mortality_improvement %>%
   filter(region == "Middle East & North Africa") %>%
@@ -746,6 +755,7 @@ middle_east_north_africa_top5
 ```{r}
 middle_east_north_africa_tail5 
 ```
+## North America (only two countries) in mortality improvement
 ```{r}
 north_america <- countries_mortality_improvement %>%
   filter(region == "North America") %>%
@@ -756,9 +766,7 @@ north_america_tail5 <-  north_america %>%
   tail(5)
 north_america_top5
 ```
-```{r}
-north_america_tail5 
-```
+## Subsaharan Africa top 5 and flop 5 countries in mortality improvement
 ```{r}
 subsaharan_africa <- countries_mortality_improvement %>%
   filter(region == "Sub-Saharan Africa") %>%
@@ -803,6 +811,7 @@ covid_data <- vroom(url)%>%
 library(scales)
 
 ```
+We used the method clean_names() to have proper column descriptions separated by a "_".
 
 We will replicate the two graphs as follows.
 
@@ -815,7 +824,7 @@ knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error 
 
 First we need to select data of interest - sex, age group, whether the patient had co-morbidities and whether the patient died, and clean missing and unknown values.
 
-```{r interest_data, echo=TRUE}
+```{r interest_data, echo=TRUE, fig.width=15}
 covid_death_rate_comorbidities<-covid_data %>% 
   filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),medcond_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% #filter for relevant values
   select(sex,age_group,death_yn,medcond_yn) %>% 
@@ -827,7 +836,7 @@ covid_death_rate_comorbidities<-covid_data %>%
 new_labels<-c('Yes'='With Comorbidities','No'='Without Comorbidities')
 
 ggplot(covid_death_rate_comorbidities,aes(x=death_rate,y=age_group))+
-geom_col(fill='navy')+
+geom_col(fill='navy', alpha = 0.7)+
 facet_grid(medcond_yn~sex,as.table=FALSE,labeller=labeller(medcond_yn=new_labels))+
   theme_bw()+
   geom_text(aes(label=round(death_rate,digits=1)),hjust=-0.1,size=3)+
@@ -842,7 +851,7 @@ facet_grid(medcond_yn~sex,as.table=FALSE,labeller=labeller(medcond_yn=new_labels
 We will calculate the covid death rate here.
 Finally we produce the plot showing the death rate by age group, sex and whether the patient had comorbidities.
 
-```{r covid_death_rate_medcond, echo=TRUE}
+```{r covid_death_rate_medcond, echo=TRUE, fig.width=15}
 covid_death_rate_icu<-covid_data %>% 
   filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),icu_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% 
   select(sex,age_group,death_yn,icu_yn) %>% 
@@ -910,54 +919,46 @@ knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
 ```{r tfl_calc, echo=FALSE, out.width="100%", fig.width=10, fig.height=7}
-bike_filtered <- bike %>%
+#Since data is on daily basis, find average by month in each year, that's actual rentals
+bikes_m <- bike %>%
                   filter(year %in% c(2015: 2020)) %>%
                   group_by(year, month) %>%
-                  summarise(avg_month=mean(bikes_hired))
+                  summarise(actual_rentals=mean(bikes_hired))
 
-bike_monthly_average <- bike_filtered %>%
+#Find average by each month across all years- that's expected rentals
+bikes_average <- bikes_m %>%
                   filter(year %in% c(2015: 2019)) %>%
                   group_by(month) %>%
-                  summarise(avg_month_yearly=mean(avg_month))
-
-# Change month to numeric
-bike_filtered$month <- as.numeric(bike_filtered$month)
-
-# Change month to numeric
-bike_monthly_average$month <- as.numeric(bike_monthly_average$month)
+                  summarise(expected_rentals=mean(actual_rentals))
 
 
-bike_left_join_1 <-left_join(bike_filtered,bike_monthly_average, by="month")
+#Merge data
+bikes_m <-left_join(bikes_m,bikes_average, by="month")
 
-bike_left_join_2 <- bike_left_join_1 %>%
-  mutate(month_diff = avg_month-avg_month_yearly)
+#Calculate excess rentals
+bikes_monthly <- bikes_m %>%
+  mutate(excess_rentals = actual_rentals-expected_rentals)
 
-bike_left_join_2
-
+# Months to numeric
+bikes_monthly$month <- as.numeric(bikes_monthly$month) 
 ```
+
+Plot the first Graph, where the blue line is the expected number of rentals in that month, and the black line is actual number of rentals. The difference is shaded red, if number of excess rentals is smaller than 0, and green otherwise.
 ```{r}
-bike_left_join_2$month <- as.numeric(bike_left_join_2$month)
-bike_left_join_2$month <- as.factor(bike_left_join_2$month)
+bikes_monthly$month <- as.factor(bikes_monthly$month)
 
 
-ggplot(data=bike_left_join_2, aes(x=month , y=avg_month_yearly, group=1)) + facet_wrap(~year) + 
+
+ggplot(data=bikes_monthly, aes(x=month , y=expected_rentals, group=1)) + facet_wrap(~year) + 
 labs(x=NULL, y="Bike Rentals\n", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") +
   theme (plot.title = element_text(size=13, face="bold"), plot.subtitle = element_text(size=9))+
-  geom_ribbon(aes(ymin = avg_month_yearly + if_else(month_diff < 0, month_diff, 0),
-                  ymax = avg_month_yearly), color ="grey", fill = "red", alpha = 0.3) +
-  geom_ribbon(aes(ymin = avg_month_yearly,
-                  ymax = avg_month_yearly + if_else(month_diff > 0, month_diff, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
+  geom_ribbon(aes(ymin = expected_rentals + if_else(excess_rentals < 0, excess_rentals, 0),
+                  ymax = expected_rentals), color ="grey", fill = "red", alpha = 0.3) +
+  geom_ribbon(aes(ymin = expected_rentals,
+                  ymax = expected_rentals + if_else(excess_rentals > 0, excess_rentals, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
   scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
 
-ggplot(data=bike_left_join_2, aes(x=month , y=year_avgMonth, group=1)) + facet_wrap(~year) + 
-labs(x=NULL, y="Bike Rentals", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") + theme (plot.title = element_text(size=10), plot.subtitle = element_text(size=9))+
-  #+ geom_line(aes(x=month, y = year_avgMonth), size=1.2, colour="blue") +
-#+ geom_line(aes(x=month, y=avgMonth), color="black", size=1.2)
-  geom_ribbon(aes(ymin = year_avgMonth + if_else(diff_month < 0, diff_month, 0),
-                  ymax = year_avgMonth), color ="black", fill = "red", alpha = 0.3) +
-  geom_ribbon(aes(ymin = year_avgMonth,
-                  ymax = year_avgMonth + if_else(diff_month > 0, diff_month, 0)),color ="black", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
-  scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue", size=0.9)
+
 
 ```
 
@@ -966,15 +967,16 @@ bike_filtered_week <- bike %>%
                   filter(year %in% c(2015: 2020)) %>%
                   group_by(year, week) %>%
                   summarise(avgWeek_filtered_week=mean(bikes_hired))
-
+#Calculate expected number of rentals each week
 bike_weekly_average <- bike_filtered_week %>%
                   filter(year %in% c(2015: 2019)) %>%
                   group_by(week) %>%
                   summarise(avgWeek_weekly_average=mean(avgWeek_filtered_week)) 
 
+#Merge data
 bike_joined_full <- left_join(bike_filtered_week, bike_weekly_average, by = "week")
 
-
+#Calculate the percentage excess rental on each week of the year
 bike_joined_full_2 <- bike_joined_full %>%
   mutate(above_avg = (avgWeek_filtered_week - avgWeek_weekly_average)*100/avgWeek_weekly_average) 
 ```
@@ -982,14 +984,16 @@ bike_joined_full_2 <- bike_joined_full %>%
 ```{r, fig.width=15, fig.height=5}
 ggplot(bike_joined_full_2, aes(x=week, y=above_avg)) + 
   labs(title= "Weekly Changes in TFL Bike Rentals", subtitle="% changes from weekly averages \ncalculated between 2015-2019", x="week", y=NULL, caption="Source: TfL, London Data Store") +
-  facet_wrap(~year)+ geom_line(fill="black") +
+  geom_line(fill="black") +
   theme_minimal() +
+  facet_wrap(~year)+ 
   geom_ribbon(aes(ymin = above_avg - if_else(above_avg < 0, above_avg, 0),
                   ymax = above_avg), color ="grey", fill = "red", alpha = 0.3) +
   geom_ribbon(aes(ymin = above_avg,
                   ymax = above_avg - if_else(above_avg > 0, above_avg, 0)),color ="grey", fill = "green", alpha = 0.3) + 
    scale_x_discrete(limits = c(13, 26, 39, 53)) +
-  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) +
+  #Shape for quartiles of the year
+  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) + 
   geom_rect(xmin=39, xmax=52,ymin=-150, ymax=150, fill="grey", alpha=0.01) +
   geom_rug(sides="b", aes(colour=ifelse(above_avg > 0, "red", "green")), alpha=0.2) +
   theme(legend.position='none') +
@@ -998,11 +1002,15 @@ ggplot(bike_joined_full_2, aes(x=week, y=above_avg)) +
 
 For both of these graphs, you have to calculate the expected number of rentals per week or month between 2015-2019 and then, see how each week/month of 2020 compares to the expected rentals. Think of the calculation `excess_rentals = actual_rentals - expected_rentals`. 
 
-Should you use the mean or the median to calculate your expected rentals? Why?
+
+In our calculation of expected rentals we use mean, as according to the distribution of bikes hired
+per month there are no clear outliers. Mean allows to capture the whole sample, accounting for absolute values in high-peaked seasons.
+It results in a more representing calculation of expected number of bikes hired in each period.
+
 
 
 # Details
 
 - Who did you collaborate with: Matias, Philipp, Alex, Sena, Shengwei, Linda
-- Approximately how much time did you spend on this problem set: 15 hours
-- What, if anything, gave you the most trouble: Styling the graphs, knitting
+- Approximately how much time did you spend on this problem set: 6x15 hours
+- What, if anything, gave you the most trouble: Styling the graphs
