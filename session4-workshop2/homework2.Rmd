@@ -895,54 +895,46 @@ knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
 ```{r tfl_calc, echo=FALSE, out.width="100%", fig.width=10, fig.height=7}
-bike_filtered <- bike %>%
+#Since data is on daily basis, find average by month in each year, that's actual rentals
+bikes_m <- bike %>%
                   filter(year %in% c(2015: 2020)) %>%
                   group_by(year, month) %>%
-                  summarise(avg_month=mean(bikes_hired))
+                  summarise(actual_rentals=mean(bikes_hired))
 
-bike_monthly_average <- bike_filtered %>%
+#Find average by each month across all years- that's expected rentals
+bikes_average <- bikes_m %>%
                   filter(year %in% c(2015: 2019)) %>%
                   group_by(month) %>%
-                  summarise(avg_month_yearly=mean(avg_month))
-
-# Change month to numeric
-bike_filtered$month <- as.numeric(bike_filtered$month)
-
-# Change month to numeric
-bike_monthly_average$month <- as.numeric(bike_monthly_average$month)
+                  summarise(expected_rentals=mean(actual_rentals))
 
 
-bike_left_join_1 <-left_join(bike_filtered,bike_monthly_average, by="month")
+#Merge data
+bikes_m <-left_join(bikes_m,bikes_average, by="month")
 
-bike_left_join_2 <- bike_left_join_1 %>%
-  mutate(month_diff = avg_month-avg_month_yearly)
+#Calculate excess rentals
+bikes_monthly <- bikes_m %>%
+  mutate(excess_rentals = actual_rentals-expected_rentals)
 
-bike_left_join_2
-
+# Months to numeric
+bikes_monthly$month <- as.numeric(bikes_monthly$month) 
 ```
+
+Plot the first Graph, where the blue line is the expected number of rentals in that month, and the black line is actual number of rentals. The difference is shaded red, if number of excess rentals is smaller than 0, and green otherwise.
 ```{r}
-bike_left_join_2$month <- as.numeric(bike_left_join_2$month)
-bike_left_join_2$month <- as.factor(bike_left_join_2$month)
+bikes_monthly$month <- as.factor(bikes_monthly$month)
 
 
-ggplot(data=bike_left_join_2, aes(x=month , y=avg_month_yearly, group=1)) + facet_wrap(~year) + 
+
+ggplot(data=bikes_monthly, aes(x=month , y=expected_rentals, group=1)) + facet_wrap(~year) + 
 labs(x=NULL, y="Bike Rentals\n", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") +
   theme (plot.title = element_text(size=13, face="bold"), plot.subtitle = element_text(size=9))+
-  geom_ribbon(aes(ymin = avg_month_yearly + if_else(month_diff < 0, month_diff, 0),
-                  ymax = avg_month_yearly), color ="grey", fill = "red", alpha = 0.3) +
-  geom_ribbon(aes(ymin = avg_month_yearly,
-                  ymax = avg_month_yearly + if_else(month_diff > 0, month_diff, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
+  geom_ribbon(aes(ymin = expected_rentals + if_else(excess_rentals < 0, excess_rentals, 0),
+                  ymax = expected_rentals), color ="grey", fill = "red", alpha = 0.3) +
+  geom_ribbon(aes(ymin = expected_rentals,
+                  ymax = expected_rentals + if_else(excess_rentals > 0, excess_rentals, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
   scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
 
-ggplot(data=bike_left_join_2, aes(x=month , y=year_avgMonth, group=1)) + facet_wrap(~year) + 
-labs(x=NULL, y="Bike Rentals", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") + theme (plot.title = element_text(size=10), plot.subtitle = element_text(size=9))+
-  #+ geom_line(aes(x=month, y = year_avgMonth), size=1.2, colour="blue") +
-#+ geom_line(aes(x=month, y=avgMonth), color="black", size=1.2)
-  geom_ribbon(aes(ymin = year_avgMonth + if_else(diff_month < 0, diff_month, 0),
-                  ymax = year_avgMonth), color ="black", fill = "red", alpha = 0.3) +
-  geom_ribbon(aes(ymin = year_avgMonth,
-                  ymax = year_avgMonth + if_else(diff_month > 0, diff_month, 0)),color ="black", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
-  scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue", size=0.9)
+
 
 ```
 
