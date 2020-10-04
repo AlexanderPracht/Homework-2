@@ -45,7 +45,7 @@ library(vroom)
 
 
 
-# 1. Climate change and temperature anomalies 
+# Climate change and temperature anomalies 
 
 
 If we wanted to study climate change, we can find data on the *Combined Land-Surface Air and Sea-Surface Water Temperature Anomalies* in the Northern Hemisphere at [NASA's Goddard Institute for Space Studies](https://data.giss.nasa.gov/gistemp). The [tabular data of temperature anomalies can be found here](https://data.giss.nasa.gov/gistemp/tabledata_v3/NH.Ts+dSST.txt)
@@ -71,7 +71,7 @@ glimpse(tidyweather)
 ```
 We observe that the dataframe has 3 variables: Year, Month, and Delta (Temparature Deviation)
 
-## 1.a Plotting Information
+## Plotting Information
 
 Let us plot the data using a time-series scatter plot, and add a trendline. To do that, we first need to create a new variable called `date` in order to ensure that the `delta` values are plot chronologically. 
 
@@ -161,7 +161,7 @@ ggplot(avg_annual_anomaly, aes(x=Year, y= annual_avg_delta))+
 ```
 
 
-## 1.2 Confidence Interval for `delta`
+## Confidence Interval for `delta`
 
 [NASA points out on their website](https://earthobservatory.nasa.gov/world-of-change/decadaltemp.php) that 
 
@@ -209,7 +209,7 @@ percentile_ci
 
 We have created two confidence intervals using two methods, one using our dataset and the other via bootstrapping for mean delta. The bootstrap method generates 1000 samples with replacement and approximates the distribution to estimate sample variability. The data shows us (for both methods, with the formula as well as with the infer package) that we can be 95% sure that the real mean of the population of temperature differences lies between 0.917 and 1.02. 
 
-# 2. General Social Survey (GSS)
+# General Social Survey (GSS)
 
 The [General Social Survey (GSS)](http://www.gss.norc.org/) gathers data on American society in order to monitor and explain trends in attitudes, behaviours, and attributes. Many trends have been tracked for decades, so one can see the evolution of attitudes, etc in American Society.
 
@@ -233,7 +233,7 @@ We will be creating 95% confidence intervals for population parameters. The vari
 - `sex`: Female - Male
 - `degree`: highest education level attained
 
-## 2.1. Instagram and Snapchat, by sex
+## Instagram and Snapchat, by sex
 
 We estimate the population proportion of Snapchat or Instagram users in 2016.
 
@@ -305,7 +305,7 @@ ggplot(social_media_summary,
 Finally, when we plot the output, we can see that the confidence intervals for females and males do not overlap considering their CIs for Snapchat or Instagram use proportions.
 
 
-## 2.2. Twitter, by education level
+## Twitter, by education level
 
 We estimate the *population* proportion of Twitter users by education level in 2016.
 
@@ -466,7 +466,9 @@ We conclude that the 95% confidence interval goes from 6 hours and 23 minutes up
 For instance, if we were to increase our confidence to 99%, we can expect wider confidence interval. If the range of our interval increases, we are more likely to capture the true population mean within our interval.
 
 
-# 3. Trump's Approval Margins
+# Trump's Approval Margins
+
+fivethirtyeight.com has detailed data on all polls that track the president’s approval.
 
 ```{r, cache=TRUE}
 # Import approval polls data
@@ -524,7 +526,6 @@ p <- Trump_approval_margin %>%
 
 p
 ```
-
 
 You can facet by year, and add an orange line at zero. Your plot should look like this:
 
@@ -797,7 +798,6 @@ ggplot(countries_data, aes(x = SP.DYN.TFRT.IN, y = SE.PRM.NENR))+
        title = "Relationship between Fertility Rate and Primary School Enrollment")
 ```
 
-
 # Challenge 1: CDC COVID-19 Public Use Data
 
 Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). 
@@ -873,6 +873,7 @@ facet_grid(icu_yn~sex,as.table=FALSE,labeller=labeller(icu_yn=new_labels_icu))+
   theme(plot.title=element_text(size=9)) 
 
 ```
+
 # Challenge 2: Excess rentals in TfL bike sharing
 
 Recall the TfL data on how many bikes were hired every single day. We can get the latest data by running the following
