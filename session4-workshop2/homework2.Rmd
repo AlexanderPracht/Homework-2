@@ -139,7 +139,8 @@ ggplot(comparison, aes(x=delta, fill=interval))+
   labs (
     title = "Delta gets more positive over the decades",
     subtitle = "Density Plot for Monthly Deltas (Temparature Anomalies)",
-    y     = "Density"   
+    y     = "Density" ,
+    x= "Delta"
   )
 
 ```
