@@ -420,7 +420,7 @@ p
 You can facet by year, and add an orange line at zero. Your plot should look like this:
 
 ```{r trump_margins, echo=FALSE, out.width="100%"}
-knitr::include_graphics(here::here("session4-workshops/images", "trump_approval_margin.png"), error = FALSE)
+knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
 ```
 
 ## Compare Confidence Intervals
@@ -613,7 +613,7 @@ graph1_deaths <- covid_data %>%
   filter(sex %in% c("Male", "Female"), 
          age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
          medcond_yn %in% c("Yes", "No"),
-         death_yn %in% c("Yes", "No"))
+         death_yn %in% c("Yes", "No")) %>%
   group_by(sex, age_group, medcond_yn) %>% #group by variables we need
   summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No") %>%
                mutate(death_rate = (yes/sum(yes+no))*100))
