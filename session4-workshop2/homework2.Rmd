@@ -583,8 +583,9 @@ ggplot(join,aes(x=SE.PRM.NENR, y =SP.DYN.TFRT.IN ))+
 
 # Challenge 1: CDC COVID-19 Public Use Data
 
-Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). There are well over 3 million entries of individual, de-identified patient data. Since this is a large file, I suggest you use `vroom` to load it and you keep `cache=TRUE` in the chunk options.
+# Challenge 1: CDC COVID-19 Public Use Data
 
+Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). 
 
 ```{r, cache=TRUE}
 # URL link to CDC to download data
@@ -594,54 +595,137 @@ covid_data <- vroom(url)%>%
   clean_names()
 ```
 
-Given the data we have, I would like you to produce two graphs that show death % rate:
-
-1. by age group, sex, and whether the patient had co-morbidities or not
-1. by age group, sex, and whether the patient was admited to Intensive Care Unit (ICU) or not.
-
+We will replicate the two graphs as follows.
 
 ```{r covid_challenge, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "covid_death_rate_comorbidities.png"), error = FALSE)
 knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error = FALSE)
-
 ```
 
-We start with the graphs:
-```{r covid_challenge, echo=FALSE"}
-graph1_deaths <- covid_data %>% 
-  select(sex, age_group, medcond_yn, death_yn) %>% #we remove the missing entries for the selected variablbes
+## Covid death % by age group, sex and whether the patient had co-morbidities
+
+First we need to select data of interest - sex, age group, whether the patient had co-morbidities and whether the patient died, and clean missing and unknown values.
+
+```{r interest_data, echo=TRUE}
+covid_death <-covid_data %>% 
+  #select column of interest
+  select(sex, age_group, medcond_yn, death_yn) %>% 
+  #Remove missing and unknown values
   filter(sex %in% c("Male", "Female"), 
          age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
          medcond_yn %in% c("Yes", "No"),
          death_yn %in% c("Yes", "No"))
-  group_by(sex, age_group, medcond_yn) %>% #group by variables we need
-  summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No") %>%
-               mutate(death_rate = (yes/sum(yes+no))*100))
-             
-             
-
-  ggplot(graph1_deaths, aes(x = age_group,y = death_rate)) +
-  geom_col()  
-
+  
 ```
 
+We will calculate the covid death rate here.
 
-The second graph:
-```{r covid_challenge, echo=FALSE"}
+```{r death_rate_medcond}
+covid_death_rate_medcond <- covid_death %>% 
+  #group by age group, sex and whether the patient had co-morbidities
+  group_by(age_group, sex, medcond_yn) %>% 
+  #calculate death rate
+  summarise (yes = sum(death_yn == "Yes"),
+             no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+ 
+```
 
-graph2_deaths <-covid_data %>% 
+```{r replace_name, echo=TRUE}
+# Turn `medcond_yn` from character to a factor variable and replace the names
+covid_death_rate_medcond <- covid_death_rate_medcond %>% 
+  mutate(medcond_yn = factor(medcond_yn, 
+                       levels = c("Yes", "No"),
+                       labels = c("With comorbidities", "Without comorbidities")))
+covid_death_rate_medcond
+```
+Finally we produce the plot showing the death rate by age group, sex and whether the patient had comorbidities.
+
+```{r covid_death_rate_medcond, echo=TRUE}
+# Plot object
+ggplot(covid_death_rate_medcond, aes(x = age_group,y = death_rate)) +
+  # Add columns (pre-counted)
+  geom_col(fill = "#1D1FAB", show.legend=FALSE, alpha=0.7, width =0.7) +  # Add a bit of trans[arecy and reduce width
+  # Add labels to columns
+  geom_text(aes(label=round(death_rate, digits = 1)), #round the data label to one decimal
+            hjust=0.08,
+            size=2) +
+  theme_bw() +
+  facet_grid(medcond_yn ~ sex, scales="free") + #facet by whether the patient had comorbidities and sex presence
+  # Flip horizontal
+  coord_flip() +
+  # Add labels
+  labs (title = "Covid death % by age group, sex and presence of co-morbidities",
+        xlab = "",
+        ylab = "",
+        caption = "Source: CDC") +
+  # Remove extras
+  theme(axis.title.x = element_blank(), #remove unnecessary x and y axis title
+        axis.title.y = element_blank())
+
+```
+## Covid death % by age group, sex and whether the patient was admitted to ICU
+
+First we need to select data of interest - sex, age group, whether the patient was admitted to ICU and whether the patient died, and remove missing and unknown values.
+
+```{r interest_2, echo=TRUE}
+covid_death <-covid_data %>% 
+  #select column of interest
   select(sex, age_group, icu_yn, death_yn) %>% 
+  #Remove missing and unknown values
   filter(sex %in% c("Male", "Female"), 
          age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
          icu_yn %in% c("Yes", "No"),
          death_yn %in% c("Yes", "No"))
-         group_by(age_group, sex, icu_yn) %>%
-         summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No"),
-             death_rate = (yes/sum(yes+no))*100)
-
-         ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
-             geom_col()
+  
 ```
+
+We will calculate the death rate here. 
+
+```{r death_rate_icu, echo=TRUE}
+covid_death_rate_icu <- covid_death %>%
+  #group by age group, sex and whether the patient was admitted to ICU
+  group_by(age_group, sex, icu_yn) %>%
+  #calculate death rate
+  summarise (yes = sum(death_yn == "Yes"),
+             no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+```
+
+```{r replace_name_2, echo=TRUE}
+# Turn `icu_yn` from character to a factor variable
+covid_death_rate_icu <- covid_death_rate_icu %>% 
+  mutate(icu_yn = factor(icu_yn, 
+                       levels = c("Yes", "No"),
+                       labels = c("Admitted to ICU", "No ICU")))
+```
+
+Finally we produce the plot showing the death rate by age group, sex and whether the patient was admitted to ICU.
+
+```{r covid_death_rate_icu, echo=TRUE}
+# plot object
+
+ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
+  # Add columns (pre-counted)
+  geom_col(fill = "#fcae91", show.legend=FALSE, alpha=0.9, width=0.7) + # add a bit of transparecy and reduce width
+  # Add theme
+  theme_bw() +
+  # Add text
+  geom_text(aes(label=round(death_rate, digits = 1)),
+            hjust=0.08,
+            size=2) +
+  facet_grid(icu_yn ~ sex, scales="free") +
+  # Flip horizontal
+  coord_flip() +
+  # Add lables
+  labs (title = "Covid death % by age group, sex and whether the patient was admitted to ICU",
+        xlab = "",
+        ylab = "",
+        caption = "Source: CDC") +
+  # Remove extras
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
 
 # Challenge 2: Excess rentals in TfL bike sharing
 
