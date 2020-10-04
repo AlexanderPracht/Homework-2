@@ -886,11 +886,13 @@ knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
 ```{r tfl_calc, echo=FALSE, out.width="100%", fig.width=10, fig.height=7}
+#Since data is on daily basis, find average by month in each year, that's actual rentals
 bikes_m <- bike %>%
                   filter(year %in% c(2015: 2020)) %>%
                   group_by(year, month) %>%
                   summarise(actual_rentals=mean(bikes_hired))
 
+#Find average by each month across all years- that's expected rentals
 bikes_average <- bikes_m %>%
                   filter(year %in% c(2015: 2019)) %>%
                   group_by(month) %>%
@@ -904,13 +906,6 @@ bikes_monthly <- bikes_m %>%
   mutate(excess_rentals = actual_rentals-expected_rentals)
 
 bikes_monthly$month <- as.numeric(bikes_monthly$month) # Months to numeric
-
-
-# 
-# bikes_monthly <- bike_left_join_1 %>%
-#   mutate(excess_rentals = avg_month-expected_rentals)
-
-# bikes_monthly
 
 
 ```
