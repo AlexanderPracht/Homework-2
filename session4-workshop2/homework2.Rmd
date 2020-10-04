@@ -552,8 +552,7 @@ Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with l
 
 # Gapminder revisited
 
-Recall the `gapminder` data frame from the gapminder package. That data frame contains just six columns from the larger [data in Gapminder World](https://www.gapminder.org/data/). In this part, you will join a few dataframes with more data than the 'gapminder' package. Specifically, you will look at data on 
-
+In this part, we will join a few dataframes on 
 
 - Life expectancy at birth (life_expectancy_years.csv)
 - GDP per capita in constant 2010 US$ (https://data.worldbank.org/indicator/NY.GDP.PCAP.KD)
@@ -561,10 +560,6 @@ Recall the `gapminder` data frame from the gapminder package. That data frame co
 - Primary school enrollment as % of children attending primary school (https://data.worldbank.org/indicator/SE.PRM.NENR)
 - Mortality rate, for under 5, per 1000 live births (https://data.worldbank.org/indicator/SH.DYN.MORT)
 - HIV prevalence (adults_with_hiv_percent_age_15_49.csv): The estimated number of people living with HIV per 100 population of age group 15-49.
-
-You must use the `wbstats` package to download data from the World Bank. The relevant World Bank indicators are `SP.DYN.TFRT.IN`, `SE.PRM.NENR`, `NY.GDP.PCAP.KD`, and `SH.DYN.MORT`
-
-
 
 ```{r, get_data, cache=TRUE}
 
@@ -575,22 +570,20 @@ life_expectancy <- read_csv(here::here("data","life_expectancy_years.csv"))
 # get World bank data using wbstats
 indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
-
 library(wbstats)
 
 worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
   select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
         
-                         
-
+                        
 # get a dataframe of information regarding countries, indicators, sources, regions, indicator topics, lending types, income levels,  from the World Bank API 
 countries <-  wbstats::wb_cachelist$countries
 
 ```
 
-You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one. You may need to tidy your data first and then perform [join operations](http://r4ds.had.co.nz/relational-data.html).
+we joined the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one.
 
-I use left_join(), because left_join() enables to preserve the original observations even when there isn't a match. What's more, left_join() is faster than merge(). The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
+We uses left_join(), because left_join() enables to preserve the original observations even when there isn't a match. What's more, left_join() is faster than merge(). The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
 ```{r}
 hiv_tidy <- hiv %>% 
   pivot_longer(cols=c('1979':'2011'),names_to = "date",values_to = "hiv_percentage")
@@ -610,14 +603,12 @@ countries_data <- full_join(countries_data, hiv_tidy, by = c("country", "date"))
   filter(!is.na(region))
 ```
 
-1. What is the relationship between HIV prevalence and life expectancy? Generate a scatterplot with a smoothing line to report your results. You may find faceting useful
-
 For most regions, including East Asia & Pacific, Latin America & Caribbean, Middle East & North Africa, there exists a negative relationship between HIV prevalence and life expectancy.
 In Europe & Central Asia and Sub-Saharan Africa the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy. However this trend seems not to be significant.
 In North America there are only two countries and therefore it is difficult to determine a trend.
 South Asia shows also a negative trend, however also here it doesn't seem to be significant.
 
-```{r}
+```{r, life_expectancy_regions}
 countries_hiv_lifeexp <- countries_data %>%
   filter(date >= 1960, #very few datapoint before 1990
          date <= 2011) %>% #No datapoint for hiv prevalence after 2011
@@ -637,8 +628,6 @@ countries_hiv_lifeexp <- countries_data %>%
        subtitle = "Between 1960 and 2011")
 ```
 
-1. What is the relationship between fertility rate and GDP per capita? Generate a scatterplot with a smoothing line to report your results. You may find facetting by region useful
-
 For all regions, the relationships between fertility rate and GDP per capita are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
 ```{r}
 ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
@@ -650,8 +639,6 @@ ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
        y = "Fertility Rate", 
        title = "Relationship between Fertility Rate and GDP per Capita")
 ```
-
-1. Which regions have the most observations with missing HIV data? Generate a bar chart (`geom_col()`), in descending order.
 
 Europe & Central Asia has the most observations with missing HIV data.
 ```{r, bar_chart_missing_HIV}
@@ -668,7 +655,7 @@ ggplot(countries_region_na, aes(x = missing_hiv, y = reorder(region, missing_hiv
   
 ```
 
-1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
+Mortality rate for under 5 declined for all 7 regions over the time from 1960.
 ```{r, mortality_regions}
 countries_region_mortality <- countries_data %>%
   group_by(region,date) %>% 
@@ -787,11 +774,8 @@ subsaharan_africa_top5
 subsaharan_africa_tail5
 ```
 
-
-1. Is there a relationship between primary school enrollment and fertility rate?
-
-Yes, there is a negative relationship between primary school enrollment rate and fertility rate. The higher the fertility rate is, the lower the primary school enrollment rate. 
-However, the relationship is not obvious in Europe & Central Asia, and North America, probably becasue the familities in these two regions are wealthy enough to afford children's education, even with more children.
+There is a negative relationship between primary school enrollment rate and fertility rate. The higher the fertility rate is, the lower the primary school enrollment rate. 
+However, the relationship is not obvious in Europe & Central Asia, and North America, probably because the families in these two regions are wealthy enough to afford children's education, even with more children.
 ```{r}
 ggplot(countries_data, aes(x = SP.DYN.TFRT.IN, y = SE.PRM.NENR))+
   geom_point(size = 0.9)+
@@ -805,8 +789,8 @@ ggplot(countries_data, aes(x = SP.DYN.TFRT.IN, y = SE.PRM.NENR))+
 
 
 # Challenge 1: CDC COVID-19 Public Use Data
-
-Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). 
+ 
+In this section we will look at the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf).
 
 ```{r, cache=TRUE}
 # URL link to CDC to download data
@@ -854,7 +838,7 @@ facet_grid(medcond_yn~sex,as.table=FALSE,labeller=labeller(medcond_yn=new_labels
 
 ```
 
-We will calculate the covid death rate here.
+We will calculate the Covid death rate here.
 Finally we produce the plot showing the death rate by age group, sex and whether the patient had comorbidities.
 
 ```{r covid_death_rate_medcond, echo=TRUE, fig.width=15}
