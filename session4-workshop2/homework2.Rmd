@@ -809,24 +809,60 @@ The second one looks at percentage changes from the expected level of weekly ren
 knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
-```{r tfl_calc, echo=FALSE, out.width="100%"}
+```{r tfl_calc, echo=FALSE, out.width="100%", fig.width=20, fig.height=10}
+bike_data <- bike%>%
+  filter(year %in% c(2015:2019))%>%
+  group_by(year,month)%>%
+  summarise(bikes_month=sum(bikes_hired), n=n())%>%
+  mutate(average_month_perday = bikes_month/n)%>%
+  ungroup()%>%
+  group_by(month)%>%
+  summarise(avg_15_19=sum(average_month_perday)/n())%>%
+  ungroup()
 
-bike1 <- bike %>% 
-  group_by(year,month) %>%   #grouping data by Year
-  summarise(actual_rentals = sum(bikes_hired, na.rm=TRUE)) %>% 
-  group_by(month) %>%   #grouping data by Year
-  mutate(expected_rentals = mean(actual_rentals, na.rm=TRUE)) %>% 
-  mutate(date = make_date(year, month, 1))
+bike_data2 <- bike%>%
+  filter(year %in% c(2015:2020))%>%
+  group_by(year,month)%>%
+  summarize(bikes_per_month = sum(bikes_hired)/n())
 
-ggplot(bike1, aes(x=month, y=actual_rentals))+
-  geom_smooth()+
-  #geom_smooth(color="red") +
-  #theme_bw() +
-  facet_wrap(~year)+
-  labs (
-    title= ""
-    ,subtitle = ""
-  )
+bike_data3 <- left_join(bike_data, bike_data2)
+
+ggplot(bike_data3)+
+  geom_line(aes(month, bikes_per_month, group=1))+
+  geom_line(aes(month, avg_15_19, group=1), color = "blue")+
+   facet_wrap(~year)+
+  geom_ribbon(aes(month, ymin = bikes_per_month, ymax= pmin(bikes_per_month,avg_15_19),group = year,alpha=0.01),show.legend = FALSE,fill="green",size=0.0001)+
+  geom_ribbon(aes(month, ymin = avg_15_19, ymax= pmin(bikes_per_month,avg_15_19),group = year,alpha=0.01),show.legend = FALSE,fill="red",size=0.0001)
+  
+ 
+
+# ggplot(bike_data3, aes(x=month, y = avg_15_19))+
+#   geom_point()+
+#     theme_bw() +
+#   labs (
+#     title = "Monthly changes in Tfl bike rentals"
+#   )+
+#   facet_wrap(~year)
+# 
+# 
+# 
+# bike1 <- bike %>% 
+#   filter(year %in% c(2015:2020))%>%
+#   group_by(year,month) %>%   #grouping data by Year
+#   summarise(actual_rentals = sum(bikes_hired, na.rm=TRUE)) %>% 
+#   group_by(month) %>%   #grouping data by Year
+#   mutate(expected_rentals = mean(actual_rentals, na.rm=TRUE)) %>% 
+#   mutate(date = make_date(year, month, 1))
+# 
+# ggplot(bike1, aes(x=month, y=actual_rentals))+
+#   geom_point()+
+#   #geom_smooth(color="red") +
+#   #theme_bw() +
+#   facet_wrap(~year)+
+#   labs (
+#     title= ""
+#     ,subtitle = ""
+#   )
 
 ```
 For both of these graphs, you have to calculate the expected number of rentals per week or month between 2015-2019 and then, see how each week/month of 2020 compares to the expected rentals. Think of the calculation `excess_rentals = actual_rentals - expected_rentals`. 
