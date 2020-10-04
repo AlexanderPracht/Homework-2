@@ -472,7 +472,7 @@ We conclude that the 95% confidence interval goes from 6 hours and 23 minutes up
 For instance, if we were to increase our confidence to 99%, we can expect wider confidence interval. If the range of our interval increases, we are more likely to capture the true population mean within our interval.
 
 
-# 3. Trump's Approval Margins
+# Trump's Approval Margins
 
 ```{r, cache=TRUE}
 # Import approval polls data
@@ -487,6 +487,7 @@ glimpse(approval_polllist)
 ```
 
 ## Create a plot
+
 We calculate the average net approval rate (approve- disapprove) for each week since he got into office. We plot the net approval, along with its 95% confidence interval.
 
 ```{r Trump_approval_margin}
@@ -552,6 +553,8 @@ Based on the results above, in week 34 confidence interval is longer due to a hi
 
 # Gapminder revisited
 
+We load the Gapminder dataset.
+
 In this part, we will join a few dataframes on 
 
 - Life expectancy at birth (life_expectancy_years.csv)
@@ -581,9 +584,9 @@ countries <-  wbstats::wb_cachelist$countries
 
 ```
 
-we joined the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one.
+Firstly, we join the three dataframes: life_expectancy, worldbank_data, and HIV
 
-We uses left_join(), because left_join() enables to preserve the original observations even when there isn't a match. What's more, left_join() is faster than merge(). The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
+We use left_join(), because left_join() enables to preserve the original observations even when there isn't a match. What's more, left_join() is faster than merge(). The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
 ```{r}
 hiv_tidy <- hiv %>% 
   pivot_longer(cols=c('1979':'2011'),names_to = "date",values_to = "hiv_percentage")
@@ -594,7 +597,7 @@ life_expectancy_tidy <- life_expectancy %>%
 life_expectancy_tidy$date <- as.numeric(life_expectancy_tidy$date)  
 
   
-region_worldbank_data <- left_join(countries, worldbank_data, by = "country") %>%
+region_worldbank <- left_join(countries, worldbank_data, by = "country") %>%
   filter(region != "Aggregates")
 
 countries_data <- full_join(region_worldbank_data, life_expectancy_tidy, by = c("country", "date"))
@@ -603,10 +606,16 @@ countries_data <- full_join(countries_data, hiv_tidy, by = c("country", "date"))
   filter(!is.na(region))
 ```
 
+We use full join within mutating joins because it helps us to keep all values in 3 dataframes and we don't want to lose any of the values. The main reason why we use full join is that we notice that some of the countries have different names in different dataframe. If we were to use left/right/inner joins, some data of the countries would be eliminated. 
+Then, we generate a scatterplot with a regression line to investigate the relationship between HIV prevalence and life expectancy.
+
 For most regions, including East Asia & Pacific, Latin America & Caribbean, Middle East & North Africa, there exists a negative relationship between HIV prevalence and life expectancy.
+
 In Europe & Central Asia and Sub-Saharan Africa the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy. However this trend seems not to be significant.
+
 In North America there are only two countries and therefore it is difficult to determine a trend.
 South Asia shows also a negative trend, however also here it doesn't seem to be significant.
+
 
 ```{r, life_expectancy_regions}
 countries_hiv_lifeexp <- countries_data %>%
@@ -628,7 +637,13 @@ countries_hiv_lifeexp <- countries_data %>%
        subtitle = "Between 1960 and 2011")
 ```
 
+We observe that the influence of HIV Prevalence on Life Expectancy varies from region to region. In some regions, such as Europe & Central Asia and Latin America & Caribbean, the lower the HIV Prevalence, the higher the Life Expectancy, which shows that HIV Prevalence is a key factor of Life Expectancy. While in some other regions, such as South Asia and East Asia & Pacific, we can’t see a clear trend, which could be caused by the lack of data in those regions to show the trend.
+
+Then, we generate a scatterplot with a regression line to investigate the relationship between fertility rate and GDP per capita.
+
+
 For all regions, the relationships between fertility rate and GDP per capita are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
+
 ```{r}
 ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
   geom_point(size = 0.9)+
@@ -640,7 +655,13 @@ ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
        title = "Relationship between Fertility Rate and GDP per Capita")
 ```
 
+We can see a clear negative relationship between GDP per capita and Fertility Rate in most regions, excluding Middle East & North Africa and Sub-Saharan .When GDP per capita increases, the fertility rate decreases. In the those regions being excluded, we observe a u-shape trend. When GDP per capita grows, the fertility rate firstly declines then goes up. There might be specific cultural factors or traditions that support them to give birth to more children when they have ability to raise up them.
+
+We then generate a bar chart, in descending order to find out which regions have the most observations with missing HIV data.
+
+
 Europe & Central Asia has the most observations with missing HIV data.
+
 ```{r, bar_chart_missing_HIV}
 countries_region_na <- countries_data %>%
   group_by(region) %>%
@@ -655,7 +676,13 @@ ggplot(countries_region_na, aes(x = missing_hiv, y = reorder(region, missing_hiv
   
 ```
 
+We observe from the bar chart above that Sub-Saharan Africa have the most missing values in HIV data.
+
+Then, we investigate how the mortality rate for under 5 changed by region.
+
+
 Mortality rate for under 5 declined for all 7 regions over the time from 1960.
+
 ```{r, mortality_regions}
 countries_region_mortality <- countries_data %>%
   group_by(region,date) %>% 
@@ -676,7 +703,9 @@ countries_mortality_improvement <- select(countries_data, "country", "date", "re
          last_rate = last(SH.DYN.MORT)) %>%
   summarise(improvement_rate = mean((first_rate - last_rate)/first_rate))
 ```
+
 ## Asia top 5 and flop 5 countries in mortality improvement
+
 ```{r, Asia}
 south_asia <- countries_mortality_improvement %>%
   filter(region == "South Asia") %>%
@@ -692,6 +721,7 @@ south_asia_tail5
 ```
 
 ## East Asia & Pacific top 5 and flop 5 countries in mortality improvement
+
 ```{r, east_asia}
 east_asia_pacific <- countries_mortality_improvement %>%
   filter(region == "East Asia & Pacific") %>%
@@ -705,7 +735,9 @@ east_asia_pacific_top5
 ```{r}
 east_asia_pacific_tail5
 ```
+
 ## Europe & Central Asia top 5 and flop 5 countries in mortality improvement
+
 ```{r}
 europe_central_asia <- countries_mortality_improvement %>%
   filter(region == "Europe & Central Asia") %>%
@@ -719,7 +751,9 @@ europe_central_asia_top5
 ```{r}
 europe_central_asia_tail5
 ```
+
 ## Latin America & Caribbean top 5 and flop 5 countries in mortality improvement
+
 ```{r}
 latin_america_caribbean <- countries_mortality_improvement %>%
   filter(region == "Latin America & Caribbean") %>%
@@ -734,7 +768,9 @@ latin_america_caribbean_top5
 ```{r}
 latin_america_caribbean_tail5
 ```
+
 ## Middle East & North Africa top 5 and flop 5 countries in mortality improvement
+
 ```{r}
 middle_east_north_africa <- countries_mortality_improvement %>%
   filter(region == "Middle East & North Africa") %>%
@@ -748,7 +784,9 @@ middle_east_north_africa_top5
 ```{r}
 middle_east_north_africa_tail5 
 ```
+
 ## North America (only two countries) in mortality improvement
+
 ```{r}
 north_america <- countries_mortality_improvement %>%
   filter(region == "North America") %>%
@@ -759,7 +797,9 @@ north_america_tail5 <-  north_america %>%
   tail(5)
 north_america_top5
 ```
+
 ## Subsaharan Africa top 5 and flop 5 countries in mortality improvement
+
 ```{r}
 subsaharan_africa <- countries_mortality_improvement %>%
   filter(region == "Sub-Saharan Africa") %>%
@@ -787,12 +827,12 @@ ggplot(countries_data, aes(x = SP.DYN.TFRT.IN, y = SE.PRM.NENR))+
        title = "Relationship between Fertility Rate and Primary School Enrollment")
 ```
 
-
 # Challenge 1: CDC COVID-19 Public Use Data
  
 In this section we will look at the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf).
 
 ```{r, cache=TRUE}
+
 # URL link to CDC to download data
 url <- "https://data.cdc.gov/api/views/vbim-akqf/rows.csv?accessType=DOWNLOAD"
 
@@ -801,6 +841,7 @@ covid_data <- vroom(url)%>%
 library(scales)
 
 ```
+
 We used the method clean_names() to have proper column descriptions separated by a "_".
 
 We will replicate the two graphs as follows.
@@ -998,5 +1039,5 @@ It results in a more representing calculation of expected number of bikes hired 
 # Details
 
 - Who did you collaborate with: Matias, Philipp, Alex, Sena, Shengwei, Linda
-- Approximately how much time did you spend on this problem set: 6x15 hours
+- Approximately how much time did you spend on this problem set: 6x8 hours
 - What, if anything, gave you the most trouble: Styling the graphs
