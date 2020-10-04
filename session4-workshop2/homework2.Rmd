@@ -934,15 +934,16 @@ bike_filtered_week <- bike %>%
                   filter(year %in% c(2015: 2020)) %>%
                   group_by(year, week) %>%
                   summarise(avgWeek_filtered_week=mean(bikes_hired))
-
+#Calculate expected number of rentals each week
 bike_weekly_average <- bike_filtered_week %>%
                   filter(year %in% c(2015: 2019)) %>%
                   group_by(week) %>%
                   summarise(avgWeek_weekly_average=mean(avgWeek_filtered_week)) 
 
+#Merge data
 bike_joined_full <- left_join(bike_filtered_week, bike_weekly_average, by = "week")
 
-
+#Calculate the percentage excess rental on each week of the year
 bike_joined_full_2 <- bike_joined_full %>%
   mutate(above_avg = (avgWeek_filtered_week - avgWeek_weekly_average)*100/avgWeek_weekly_average) 
 ```
@@ -950,14 +951,16 @@ bike_joined_full_2 <- bike_joined_full %>%
 ```{r, fig.width=15, fig.height=5}
 ggplot(bike_joined_full_2, aes(x=week, y=above_avg)) + 
   labs(title= "Weekly Changes in TFL Bike Rentals", subtitle="% changes from weekly averages \ncalculated between 2015-2019", x="week", y=NULL, caption="Source: TfL, London Data Store") +
-  facet_wrap(~year)+ geom_line(fill="black") +
+  geom_line(fill="black") +
   theme_minimal() +
+  facet_wrap(~year)+ 
   geom_ribbon(aes(ymin = above_avg - if_else(above_avg < 0, above_avg, 0),
                   ymax = above_avg), color ="grey", fill = "red", alpha = 0.3) +
   geom_ribbon(aes(ymin = above_avg,
                   ymax = above_avg - if_else(above_avg > 0, above_avg, 0)),color ="grey", fill = "green", alpha = 0.3) + 
    scale_x_discrete(limits = c(13, 26, 39, 53)) +
-  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) +
+  #Shape for quartiles of the year
+  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) + 
   geom_rect(xmin=39, xmax=52,ymin=-150, ymax=150, fill="grey", alpha=0.01) +
   geom_rug(sides="b", aes(colour=ifelse(above_avg > 0, "red", "green")), alpha=0.2) +
   theme(legend.position='none') +
@@ -966,7 +969,10 @@ ggplot(bike_joined_full_2, aes(x=week, y=above_avg)) +
 
 For both of these graphs, you have to calculate the expected number of rentals per week or month between 2015-2019 and then, see how each week/month of 2020 compares to the expected rentals. Think of the calculation `excess_rentals = actual_rentals - expected_rentals`. 
 
-Should you use the mean or the median to calculate your expected rentals? Why?
+
+In our calculation of expected rentals we use mean, as according to the distribution of bikes hired
+per month there are no clear outliers. Mean allows to capture the whole sample, accounting for absolute values in high-peaked seasons.
+It results in a more representing calculation of expected number of bikes hired in each period.
 
 
 # Details
