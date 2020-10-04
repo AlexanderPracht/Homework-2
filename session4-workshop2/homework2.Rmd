@@ -207,7 +207,7 @@ percentile_ci <- data_infer %>%
 percentile_ci
 ```
 
-We have created two confidence intervals using two methods, one using our dataset and the other via bootstrapping for mean delta. The bootstrap method generates 1000 samples with replacement and approximates the distribution to estimate sample variability. The data shows us (for both methods, with the formula as well as with the infer package) that we can be 95% sure that the real mean of the population of temperature differences lies between 0.917 and 1.02.
+We have created two confidence intervals using two methods, one using our dataset and the other via bootstrapping for mean delta. The bootstrap method generates 1000 samples with replacement and approximates the distribution to estimate sample variability. The data shows us (for both methods, with the formula as well as with the infer package) that we can be 95% sure that the real mean of the population of temperature differences lies between 0.917 and 1.02. 
 
 # General Social Survey (GSS)
 
