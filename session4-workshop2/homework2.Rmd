@@ -865,7 +865,7 @@ bike <- bike0 %>%
   clean_names() %>% 
   rename (bikes_hired = number_of_bicycle_hires) %>% 
   mutate (year = year(day),
-          month = lubridate::month(day, label = TRUE),
+          month = lubridate::month(day, label = TRUE, locale= "English"),
           week = isoweek(day))
 ```
 
@@ -929,10 +929,10 @@ labs(x=NULL, y="Bike Rentals", caption="Source: TfL, London Data Store", title="
   #+ geom_line(aes(x=month, y = year_avgMonth), size=1.2, colour="blue") +
 #+ geom_line(aes(x=month, y=avgMonth), color="black", size=1.2)
   geom_ribbon(aes(ymin = year_avgMonth + if_else(diff_month < 0, diff_month, 0),
-                  ymax = year_avgMonth), color ="grey", fill = "red", alpha = 0.3) +
+                  ymax = year_avgMonth), color ="black", fill = "red", alpha = 0.3) +
   geom_ribbon(aes(ymin = year_avgMonth,
-                  ymax = year_avgMonth + if_else(diff_month > 0, diff_month, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
-  scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
+                  ymax = year_avgMonth + if_else(diff_month > 0, diff_month, 0)),color ="black", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
+  scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue", size=0.9)
 ```
 
 ```{r}
