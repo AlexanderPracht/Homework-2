@@ -981,5 +981,5 @@ Should you use the mean or the median to calculate your expected rentals? Why?
 # Details
 
 - Who did you collaborate with: Matias, Philipp, Alex, Sena, Shengwei, Linda
-- Approximately how much time did you spend on this problem set: 15 hours
-- What, if anything, gave you the most trouble: Styling the graphs, knitting
+- Approximately how much time did you spend on this problem set: 6x15 hours
+- What, if anything, gave you the most trouble: Styling the graphs
