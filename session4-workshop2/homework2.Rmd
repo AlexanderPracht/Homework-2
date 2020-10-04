@@ -381,8 +381,6 @@ email_data <- social_media%>%
 
 # Trump's Approval Margins
 
-As we saw in class, fivethirtyeight.com has detailed data on [all polls that track the president's approval ](https://projects.fivethirtyeight.com/trump-approval-ratings)
-
 ```{r, cache=TRUE}
 # Import approval polls data
 approval_polllist <- read_csv(here::here('data', 'approval_polllist.csv'))
@@ -396,8 +394,7 @@ glimpse(approval_polllist)
 ```
 
 ## Create a plot
-
-What I would like you to do is to calculate the average net approval rate (approve- disapprove) for each week since he got into office. I want you plot the net approval, along with its 95% confidence interval. There are various dates given for each poll, please use `enddate`, i.e., the date the poll ended.
+Trump's net approval rate each week faceted by year.
 
 ```{r Trump_approval_margin}
 approval_polllist <- approval_polllist %>% 
@@ -441,21 +438,15 @@ p <- Trump_approval_margin %>%
 p
 ```
 
-You can facet by year, and add an orange line at zero. Your plot should look like this:
+## Compare Confidence Intervals for week 15 and week 20 in 2020
 
-```{r trump_margins, echo=FALSE, out.width="100%"}
-knitr::include_graphics(here::here("session4-workshops/images", "trump_approval_margin.png"), error = FALSE)
-```
-
-## Compare Confidence Intervals
-
-Compare the confidence intervals for `week 15` (6-12 April 2020) and `week 34` (17-23 August 2020). Can you explain what's going on? One paragraph would be enough.
 ```{r}
 Trump_approval_margin %>% 
   filter(week %in% c(15, 34), year == 2020) %>% 
   select(c(year, week, low_net_approval, high_net_approval))
 
 ```
+
 Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net approval rate caused a higher standard error and therefore a larger confidence interval for week 34.
 
 
@@ -485,7 +476,7 @@ indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
 library(wbstats)
 
-worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
+worldbank_data <- read_csv(here::here("session4-workshop2/data","worldbank_data.csv")) %>% 
   select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
         
                          
@@ -638,13 +629,14 @@ graph1_deaths <- covid_data %>%
          age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
          medcond_yn %in% c("Yes", "No"),
          death_yn %in% c("Yes", "No"))
-  group_by(age_group, sex, medcond_yn) %>% #group by variables we need
-  summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No"),
-             death_rate = (yes/sum(yes+no))*100)
- 
-  
+  group_by(sex, age_group, medcond_yn) %>% #group by variables we need
+  summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No") %>%
+               mutate(death_rate = (yes/sum(yes+no))*100))
+             
+             
+
   ggplot(graph1_deaths, aes(x = age_group,y = death_rate)) +
-  geom_col()   
+  geom_col()  
 
 ```
 
