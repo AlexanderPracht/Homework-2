@@ -262,7 +262,7 @@ In this assignment we analyze data from the **2016 GSS sample data**, using it t
 
 
 ```{r, read_gss_data, cache=TRUE}
-gss <- read_csv(here::here("session4-workshop2/data", "smallgss2016.csv"), 
+gss <- read_csv(here::here("data", "smallgss2016.csv"), 
                 na = c("", "Don't know",
                        "No answer", "Not applicable"))
 ```
@@ -351,8 +351,6 @@ Can we estimate the *population* parameter on time spent on email weekly?
 1. Would you expect a 99% confidence interval to be wider or narrower than the interval you calculated above? Explain your reasoning.
 
 ```{r}
-type(emailhr)
-
 email_data <- social_media%>%
   mutate(email = ifelse(emailmin=="NA", "NA", as.double(emailhr)*60 + as.double(emailmin)))
 ```
@@ -361,7 +359,7 @@ email_data <- social_media%>%
 
 ```{r, cache=TRUE}
 # Import approval polls data
-approval_polllist <- read_csv(here::here('session4-workshop2/data', 'approval_polllist.csv'))
+approval_polllist <- read_csv(here::here('data', 'approval_polllist.csv'))
 
 # or directly off fivethirtyeight website
 # approval_polllist <- read_csv('https://projects.fivethirtyeight.com/trump-approval-data/approval_polllist.csv') 
@@ -445,8 +443,8 @@ You must use the `wbstats` package to download data from the World Bank. The rel
 ```{r, get_data, cache=TRUE}
 
 # load gapminder HIV data
-hiv <- read_csv(here::here("session4-workshop2/data","adults_with_hiv_percent_age_15_49.csv"))
-life_expectancy <- read_csv(here::here("session4-workshop2/data","life_expectancy_years.csv"))
+hiv <- read_csv(here::here("data","adults_with_hiv_percent_age_15_49.csv"))
+life_expectancy <- read_csv(here::here("data","life_expectancy_years.csv"))
 
 # get World bank data using wbstats
 indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
@@ -585,8 +583,6 @@ url <- "https://data.cdc.gov/api/views/vbim-akqf/rows.csv?accessType=DOWNLOAD"
 
 covid_data <- vroom(url)%>%
   clean_names()
-
-
 ```
 
 Given the data we have, I would like you to produce two graphs that show death % rate:
@@ -598,11 +594,45 @@ Given the data we have, I would like you to produce two graphs that show death %
 ```{r covid_challenge, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "covid_death_rate_comorbidities.png"), error = FALSE)
 knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error = FALSE)
+
+```
+
+We start with the graphs:
+```{r covid_challenge, echo=FALSE"}
+graph1_deaths <- covid_data %>% 
+  select(sex, age_group, medcond_yn, death_yn) %>% #we remove the missing entries for the selected variablbes
+  filter(sex %in% c("Male", "Female"), 
+         age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
+         medcond_yn %in% c("Yes", "No"),
+         death_yn %in% c("Yes", "No"))
+  group_by(sex, age_group, medcond_yn) %>% #group by variables we need
+  summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No") %>%
+               mutate(death_rate = (yes/sum(yes+no))*100))
+             
+             
+
+  ggplot(graph1_deaths, aes(x = age_group,y = death_rate)) +
+  geom_col()  
+
 ```
 
 
-Besides the graphs, make sure your code is easy to read and understand-- imagine if you revisit this six months from now. you should be able to follow what you were doing!
+The second graph:
+```{r covid_challenge, echo=FALSE"}
 
+graph2_deaths <-covid_data %>% 
+  select(sex, age_group, icu_yn, death_yn) %>% 
+  filter(sex %in% c("Male", "Female"), 
+         age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
+         icu_yn %in% c("Yes", "No"),
+         death_yn %in% c("Yes", "No"))
+         group_by(age_group, sex, icu_yn) %>%
+         summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+
+         ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
+             geom_col()
+```
 
 # Challenge 2: Excess rentals in TfL bike sharing
 
