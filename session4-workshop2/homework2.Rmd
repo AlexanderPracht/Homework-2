@@ -689,6 +689,26 @@ The second one looks at percentage changes from the expected level of weekly ren
 knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
+```{r tfl_calc, echo=FALSE, out.width="100%"}
+
+bike1 <- bike %>% 
+  group_by(year,month) %>%   #grouping data by Year
+  summarise(actual_rentals = sum(bikes_hired, na.rm=TRUE)) %>% 
+  group_by(month) %>%   #grouping data by Year
+  mutate(expected_rentals = mean(actual_rentals, na.rm=TRUE)) %>% 
+  mutate(date = make_date(year, month, 1))
+
+ggplot(bike1, aes(x=month, y=actual_rentals))+
+  geom_smooth()+
+  #geom_smooth(color="red") +
+  #theme_bw() +
+  facet_wrap(~year)+
+  labs (
+    title= ""
+    ,subtitle = ""
+  )
+
+```
 For both of these graphs, you have to calculate the expected number of rentals per week or month between 2015-2019 and then, see how each week/month of 2020 compares to the expected rentals. Think of the calculation `excess_rentals = actual_rentals - expected_rentals`. 
 
 Should you use the mean or the median to calculate your expected rentals? Why?
