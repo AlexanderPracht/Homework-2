@@ -359,8 +359,6 @@ email_data <- social_media%>%
 
 # Trump's Approval Margins
 
-As we saw in class, fivethirtyeight.com has detailed data on [all polls that track the president's approval ](https://projects.fivethirtyeight.com/trump-approval-ratings)
-
 ```{r, cache=TRUE}
 # Import approval polls data
 approval_polllist <- read_csv(here::here('session4-workshop2/data', 'approval_polllist.csv'))
@@ -374,8 +372,7 @@ glimpse(approval_polllist)
 ```
 
 ## Create a plot
-
-What I would like you to do is to calculate the average net approval rate (approve- disapprove) for each week since he got into office. I want you plot the net approval, along with its 95% confidence interval. There are various dates given for each poll, please use `enddate`, i.e., the date the poll ended.
+Trump's net approval rate each week faceted by year.
 
 ```{r Trump_approval_margin}
 approval_polllist <- approval_polllist %>% 
@@ -419,21 +416,15 @@ p <- Trump_approval_margin %>%
 p
 ```
 
-You can facet by year, and add an orange line at zero. Your plot should look like this:
+## Compare Confidence Intervals for week 15 and week 20 in 2020
 
-```{r trump_margins, echo=FALSE, out.width="100%"}
-knitr::include_graphics(here::here("session4-workshops/images", "trump_approval_margin.png"), error = FALSE)
-```
-
-## Compare Confidence Intervals
-
-Compare the confidence intervals for `week 15` (6-12 April 2020) and `week 34` (17-23 August 2020). Can you explain what's going on? One paragraph would be enough.
 ```{r}
 Trump_approval_margin %>% 
   filter(week %in% c(15, 34), year == 2020) %>% 
   select(c(year, week, low_net_approval, high_net_approval))
 
 ```
+
 Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net approval rate caused a higher standard error and therefore a larger confidence interval for week 34.
 
 
@@ -463,7 +454,7 @@ indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
 library(wbstats)
 
-worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
+worldbank_data <- read_csv(here::here("session4-workshop2/data","worldbank_data.csv")) %>% 
   select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
         
                          
