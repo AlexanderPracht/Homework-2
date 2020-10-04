@@ -889,12 +889,12 @@ knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 bike_filtered <- bike %>%
                   filter(year %in% c(2015: 2020)) %>%
                   group_by(year, month) %>%
-                  summarise(avgMonth=mean(bikes_hired))
+                  summarise(avg_month=mean(bikes_hired))
 
 bike_monthly_average <- bike_filtered %>%
                   filter(year %in% c(2015: 2019)) %>%
                   group_by(month) %>%
-                  summarise(year_avgMonth=mean(avgMonth))
+                  summarise(avg_month_yearly=mean(avg_month))
 
 # Change month to numeric
 bike_filtered$month <- as.numeric(bike_filtered$month)
@@ -906,18 +906,24 @@ bike_monthly_average$month <- as.numeric(bike_monthly_average$month)
 bike_left_join_1 <-left_join(bike_filtered,bike_monthly_average, by="month")
 
 bike_left_join_2 <- bike_left_join_1 %>%
-  mutate(diff_month = avgMonth-year_avgMonth)
-
+  mutate(month_diff = avg_month-avg_month_yearly)
 
 bike_left_join_2
-
-
-  
 
 ```
 ```{r}
 bike_left_join_2$month <- as.numeric(bike_left_join_2$month)
 bike_left_join_2$month <- as.factor(bike_left_join_2$month)
+
+
+ggplot(data=bike_left_join_2, aes(x=month , y=avg_month_yearly, group=1)) + facet_wrap(~year) + 
+labs(x=NULL, y="Bike Rentals\n", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") +
+  theme (plot.title = element_text(size=13, face="bold"), plot.subtitle = element_text(size=9))+
+  geom_ribbon(aes(ymin = avg_month_yearly + if_else(month_diff < 0, month_diff, 0),
+                  ymax = avg_month_yearly), color ="grey", fill = "red", alpha = 0.3) +
+  geom_ribbon(aes(ymin = avg_month_yearly,
+                  ymax = avg_month_yearly + if_else(month_diff > 0, month_diff, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
+  scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
 
 ggplot(data=bike_left_join_2, aes(x=month , y=year_avgMonth, group=1)) + facet_wrap(~year) + 
 labs(x=NULL, y="Bike Rentals", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") + theme (plot.title = element_text(size=10), plot.subtitle = element_text(size=9))+
@@ -928,6 +934,7 @@ labs(x=NULL, y="Bike Rentals", caption="Source: TfL, London Data Store", title="
   geom_ribbon(aes(ymin = year_avgMonth,
                   ymax = year_avgMonth + if_else(diff_month > 0, diff_month, 0)),color ="black", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
   scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue", size=0.9)
+
 ```
 
 ```{r}
@@ -945,22 +952,22 @@ bike_joined_full <- left_join(bike_filtered_week, bike_weekly_average, by = "wee
 
 
 bike_joined_full_2 <- bike_joined_full %>%
-  mutate(excessrentalspercent = (avgWeek_filtered_week - avgWeek_weekly_average)*100/avgWeek_weekly_average) 
+  mutate(above_avg = (avgWeek_filtered_week - avgWeek_weekly_average)*100/avgWeek_weekly_average) 
 ```
 
-```{r}
-ggplot(bike_joined_full_2, aes(x=week, y=excessrentalspercent)) + 
-  labs(title= "Weekly Changes in TFL Bike Rentals", subtitle=" % changes from weekly averages calculated between 2015-2019", x="week", y=NULL, caption="Source: TfL, London Data Store") +
+```{r, fig.width=15, fig.height=5}
+ggplot(bike_joined_full_2, aes(x=week, y=above_avg)) + 
+  labs(title= "Weekly Changes in TFL Bike Rentals", subtitle="% changes from weekly averages \ncalculated between 2015-2019", x="week", y=NULL, caption="Source: TfL, London Data Store") +
   facet_wrap(~year)+ geom_line(fill="black") +
   theme_minimal() +
-  geom_ribbon(aes(ymin = excessrentalspercent - if_else(excessrentalspercent < 0, excessrentalspercent, 0),
-                  ymax = excessrentalspercent), color ="grey", fill = "red", alpha = 0.3) +
-  geom_ribbon(aes(ymin = excessrentalspercent,
-                  ymax = excessrentalspercent - if_else(excessrentalspercent > 0, excessrentalspercent, 0)),color ="grey", fill = "green", alpha = 0.3) + 
+  geom_ribbon(aes(ymin = above_avg - if_else(above_avg < 0, above_avg, 0),
+                  ymax = above_avg), color ="grey", fill = "red", alpha = 0.3) +
+  geom_ribbon(aes(ymin = above_avg,
+                  ymax = above_avg - if_else(above_avg > 0, above_avg, 0)),color ="grey", fill = "green", alpha = 0.3) + 
    scale_x_discrete(limits = c(13, 26, 39, 53)) +
-  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) +geom_rect(xmin=39, xmax=52,ymin=-150, ymax=150,
-                                                                                          fill="grey", alpha=0.01) +
-  geom_rug(sides="b", aes(colour=ifelse(excessrentalspercent > 0, "red", "green")), alpha=0.2) +
+  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) +
+  geom_rect(xmin=39, xmax=52,ymin=-150, ymax=150, fill="grey", alpha=0.01) +
+  geom_rug(sides="b", aes(colour=ifelse(above_avg > 0, "red", "green")), alpha=0.2) +
   theme(legend.position='none') +
   scale_y_continuous(labels = function(x) paste0(x, "%"))
 ```
