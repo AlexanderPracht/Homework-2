@@ -953,8 +953,10 @@ bikes_monthly$month <- as.factor(bikes_monthly$month)
 ggplot(data=bikes_monthly, aes(x=month , y=expected_rentals, group=1)) + facet_wrap(~year) + 
 labs(x=NULL, y="Bike Rentals\n", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") +
   theme (plot.title = element_text(size=13, face="bold"), plot.subtitle = element_text(size=9))+
+  #Shading regions with actual rentals lower then expected with red
   geom_ribbon(aes(ymin = expected_rentals + if_else(excess_rentals < 0, excess_rentals, 0),
                   ymax = expected_rentals), color ="grey", fill = "red", alpha = 0.3) +
+  #And with green in other case
   geom_ribbon(aes(ymin = expected_rentals,
                   ymax = expected_rentals + if_else(excess_rentals > 0, excess_rentals, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
   scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
