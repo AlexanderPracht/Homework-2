@@ -355,8 +355,8 @@ twitter_bach <- twitter_population %>%
 
 twitter_bach
 ```
-```{r}
-graduate_ci <- twitter_pop %>% 
+```{r, graduate_ci_calculating}
+graduate_ci <- twitter_population %>% 
   filter(twitter != "NA", bachelor_graduate != "NA") %>% 
   mutate(bachelor_graduate_adj = bachelor_graduate == "Yes") %>% 
   group_by(twitter) %>% 
@@ -388,7 +388,7 @@ ggplot(graduate_ci,
   NULL
 ```
 
-We observe that the two confidence intervals do not overlap. This shows that there is a significant difference between in education between twitter users and non-twitter users.
+We observe that the two confidence intervals do not overlap. This shows that there is a significant difference in education between twitter users and non-twitter users.
 
 ## Email usage
 
@@ -537,7 +537,7 @@ We facet by year, and add an orange line at zero.
 knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
 ```
 
-## Compare Confidence Intervals for week 15 and week 20 in 2020
+## Compare Confidence Intervals for week 15 and week 34 in 2020
 
 We compare the confidence intervals for 'week 15' (6-12 April 2020) and 'week 34' (17-23 August 2020).
 
@@ -589,7 +589,7 @@ life_expectancy_tidy$date <- as.numeric(life_expectancy_tidy$date)
 region_worldbank <- full_join(countries, worldbank_data, by = "country") %>%
   filter(region != "Aggregates")
 
-countries_data <- full_join(region_worldbank_data, life_expectancy_tidy, by = c("country", "date"))
+countries_data <- full_join(region_worldbank, life_expectancy_tidy, by = c("country", "date"))
 
 countries_data <- full_join(countries_data, hiv_tidy, by = c("country", "date")) %>%
   filter(!is.na(region))
@@ -670,7 +670,8 @@ ggplot(countries_region_mortality, aes(x=date,y = mean_mortality ))+
   facet_wrap(~region)+ 
   theme_bw()+
   labs(x="Date",y = " Mortality Per 1000 for Under 5",
-       title = " Mortality rate for under 5 changed by region")
+       title= "Declination of Mortality",
+       subtitle = " Mortality rate for under 5 changed by region")
 ```
 ```{r, countries_mortality_improvements}
 countries_mortality_improvement <- select(countries_data, "country", "date", "region", "SH.DYN.MORT") %>%
@@ -833,6 +834,7 @@ knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error 
 First we need to select data of interest - sex, age group, whether the patient had co-morbidities and whether the patient died, and clean missing and unknown values.
 
 ```{r interest_data, echo=TRUE, fig.width=15}
+library("scales")
 covid_death_rate_comorbidities<-covid_data %>% 
   filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),medcond_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% #filter for relevant values
   select(sex,age_group,death_yn,medcond_yn) %>% 
@@ -881,6 +883,7 @@ facet_grid(icu_yn~sex,as.table=FALSE,labeller=labeller(icu_yn=new_labels_icu))+
   theme(plot.title=element_text(size=9)) 
 
 ```
+
 # Challenge 2: Excess rentals in TfL bike sharing
 
 In this section we will look at the Tfl bike sharing data.
