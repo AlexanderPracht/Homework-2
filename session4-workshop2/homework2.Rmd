@@ -592,8 +592,6 @@ url <- "https://data.cdc.gov/api/views/vbim-akqf/rows.csv?accessType=DOWNLOAD"
 
 covid_data <- vroom(url)%>%
   clean_names()
-
-
 ```
 
 Given the data we have, I would like you to produce two graphs that show death % rate:
@@ -605,11 +603,44 @@ Given the data we have, I would like you to produce two graphs that show death %
 ```{r covid_challenge, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "covid_death_rate_comorbidities.png"), error = FALSE)
 knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error = FALSE)
+
+```
+
+We start with the graphs:
+```{r covid_challenge, echo=FALSE"}
+graph1_deaths <- covid_data %>% 
+  select(sex, age_group, medcond_yn, death_yn) %>% #we remove the missing entries for the selected variablbes
+  filter(sex %in% c("Male", "Female"), 
+         age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
+         medcond_yn %in% c("Yes", "No"),
+         death_yn %in% c("Yes", "No"))
+  group_by(age_group, sex, medcond_yn) %>% #group by variables we need
+  summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+ 
+  
+  ggplot(graph1_deaths, aes(x = age_group,y = death_rate)) +
+  geom_col()   
+
 ```
 
 
-Besides the graphs, make sure your code is easy to read and understand-- imagine if you revisit this six months from now. you should be able to follow what you were doing!
+The second graph:
+```{r covid_challenge, echo=FALSE"}
 
+graph2_deaths <-covid_data %>% 
+  select(sex, age_group, icu_yn, death_yn) %>% 
+  filter(sex %in% c("Male", "Female"), 
+         age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
+         icu_yn %in% c("Yes", "No"),
+         death_yn %in% c("Yes", "No"))
+         group_by(age_group, sex, icu_yn) %>%
+         summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+
+         ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
+             geom_col()
+```
 
 # Challenge 2: Excess rentals in TfL bike sharing
 
