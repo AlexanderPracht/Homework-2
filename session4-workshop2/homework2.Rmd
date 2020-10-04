@@ -912,7 +912,6 @@ bikes_monthly$month <- as.numeric(bikes_monthly$month)
 
 Plot the first Graph, where the blue line is the expected number of rentals in that month, and the black line is actual number of rentals. The difference is shaded red, if number of excess rentals is smaller than 0, and green otherwise.
 ```{r}
-bikes_monthly$month <- as.numeric(bikes_monthly$month)
 bikes_monthly$month <- as.factor(bikes_monthly$month)
 
 
