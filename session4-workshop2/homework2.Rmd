@@ -45,7 +45,7 @@ library(vroom)
 
 
 
-# Climate change and temperature anomalies 
+# 1. Climate change and temperature anomalies 
 
 
 If we wanted to study climate change, we can find data on the *Combined Land-Surface Air and Sea-Surface Water Temperature Anomalies* in the Northern Hemisphere at [NASA's Goddard Institute for Space Studies](https://data.giss.nasa.gov/gistemp). The [tabular data of temperature anomalies can be found here](https://data.giss.nasa.gov/gistemp/tabledata_v3/NH.Ts+dSST.txt)
@@ -66,12 +66,12 @@ Then we select the year and the months from the ‘weather’ dataset and conver
 ```{r tidyweather}
 tidyweather <- weather %>%
   select(c(Year,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec))%>%
-  pivot_longer(cols = 2:13, names_to = "Month", values_to = "Delta")
+  pivot_longer(cols = 2:13, names_to = "Month", values_to = "delta")
 glimpse(tidyweather)
 ```
-We observe that the dataframe has 3 variables: Year, Month, and Delta (Temparature Deviation)
+We observe that the dataframe has 3 variables: Year, Month, and Delta (Temperature Deviation)
 
-## Plotting Information
+## 1.a Plotting Information
 
 Let us plot the data using a time-series scatter plot, and add a trendline. To do that, we first need to create a new variable called `date` in order to ensure that the `delta` values are plot chronologically. 
 
@@ -81,19 +81,22 @@ tidyweather <- tidyweather %>%
          month = month(date, label=TRUE),
          year = year(date))
 
-ggplot(tidyweather, aes(x=date, y = Delta))+
+ggplot(tidyweather, aes(x=date, y = delta))+
   geom_point()+
   geom_smooth(color="red") +
   theme_bw() +
   labs (
-    title = "Weather Anomalies"
-  )
+    subtitle = "Weather Anomalies", 
+    title = "Weather is becoming warmer and warmer"
+  )+
+  xlab("Date")+
+  ylab("Temperature Deviation per month")
 ```
 
 We create a scatter plot for each month.
 
 ```{r facet_wrap, echo=FALSE}
-ggplot(tidyweather, aes(x=date, y=Delta))+
+ggplot(tidyweather, aes(x=date, y=delta))+
   geom_point()+
   geom_smooth(color="red") +
   theme_bw() +
@@ -101,7 +104,9 @@ ggplot(tidyweather, aes(x=date, y=Delta))+
   labs (
     title= "The effect of increasing temperature is observed in all months"
     ,subtitle = "Weather Anomalies for each month"
-  )
+  )+
+  xlab("Year")+
+  ylab("Temperature Deviation per month")
 ```
 
 Looking at the plot we created, we observe that delta is increasing over time for all months. However, it seems that this increase is more pronounced in Winter. For instance, in October - March, the delta is closer to 1.5, whereas in the summer months it is around 1.
@@ -134,19 +139,20 @@ ggplot(comparison, aes(x=delta, fill=interval))+
   labs (
     title = "Delta gets more positive over the decades",
     subtitle = "Density Plot for Monthly Deltas (Temparature Anomalies)",
-    y     = "Density"   
+    y     = "Density" ,
+    x= "Delta"
   )
 
 ```
 
 So far, we have been working with monthly anomalies. However, we might be interested in average annual anomalies. We can do this by using `group_by()` and `summarise()`, followed by a scatter plot to display the result. 
 
-```{r averaging}
+```{r, averaging}
 
 avg_annual_anomaly <- tidyweather %>% 
   group_by(Year) %>%  
   # creating summaries for mean delta 
-  summarise(annual_avg_delta = mean(Delta, na.rm=TRUE)) 
+  summarise(annual_avg_delta = mean(delta, na.rm=TRUE)) 
 
 ggplot(avg_annual_anomaly, aes(x=Year, y= annual_avg_delta))+
   geom_point()+
@@ -161,7 +167,7 @@ ggplot(avg_annual_anomaly, aes(x=Year, y= annual_avg_delta))+
 ```
 
 
-## Confidence Interval for `delta`
+## 1.2 Confidence Interval for `delta`
 
 [NASA points out on their website](https://earthobservatory.nasa.gov/world-of-change/decadaltemp.php) that 
 
@@ -209,7 +215,7 @@ percentile_ci
 
 We have created two confidence intervals using two methods, one using our dataset and the other via bootstrapping for mean delta. The bootstrap method generates 1000 samples with replacement and approximates the distribution to estimate sample variability. The data shows us (for both methods, with the formula as well as with the infer package) that we can be 95% sure that the real mean of the population of temperature differences lies between 0.917 and 1.02. 
 
-# General Social Survey (GSS)
+# 2. General Social Survey (GSS)
 
 The [General Social Survey (GSS)](http://www.gss.norc.org/) gathers data on American society in order to monitor and explain trends in attitudes, behaviours, and attributes. Many trends have been tracked for decades, so one can see the evolution of attitudes, etc in American Society.
 
@@ -233,7 +239,7 @@ We will be creating 95% confidence intervals for population parameters. The vari
 - `sex`: Female - Male
 - `degree`: highest education level attained
 
-## Instagram and Snapchat, by sex
+## 2.1. Instagram and Snapchat, by sex
 
 We estimate the population proportion of Snapchat or Instagram users in 2016.
 
@@ -305,7 +311,7 @@ ggplot(social_media_summary,
 Finally, when we plot the output, we can see that the confidence intervals for females and males do not overlap considering their CIs for Snapchat or Instagram use proportions.
 
 
-## Twitter, by education level
+## 2.2. Twitter, by education level
 
 We estimate the *population* proportion of Twitter users by education level in 2016.
 
@@ -466,9 +472,7 @@ We conclude that the 95% confidence interval goes from 6 hours and 23 minutes up
 For instance, if we were to increase our confidence to 99%, we can expect wider confidence interval. If the range of our interval increases, we are more likely to capture the true population mean within our interval.
 
 
-# Trump's Approval Margins
-
-fivethirtyeight.com has detailed data on all polls that track the president’s approval.
+# 3. Trump's Approval Margins
 
 ```{r, cache=TRUE}
 # Import approval polls data
@@ -799,6 +803,7 @@ ggplot(countries_data, aes(x = SP.DYN.TFRT.IN, y = SE.PRM.NENR))+
        title = "Relationship between Fertility Rate and Primary School Enrollment")
 ```
 
+
 # Challenge 1: CDC COVID-19 Public Use Data
 
 Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). 
@@ -874,7 +879,6 @@ facet_grid(icu_yn~sex,as.table=FALSE,labeller=labeller(icu_yn=new_labels_icu))+
   theme(plot.title=element_text(size=9)) 
 
 ```
-
 # Challenge 2: Excess rentals in TfL bike sharing
 
 Recall the TfL data on how many bikes were hired every single day. We can get the latest data by running the following
@@ -954,10 +958,8 @@ bikes_monthly$month <- as.factor(bikes_monthly$month)
 ggplot(data=bikes_monthly, aes(x=month , y=expected_rentals, group=1)) + facet_wrap(~year) + 
 labs(x=NULL, y="Bike Rentals\n", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") +
   theme (plot.title = element_text(size=13, face="bold"), plot.subtitle = element_text(size=9))+
-  #Shading regions with actual rentals lower then expected with red
   geom_ribbon(aes(ymin = expected_rentals + if_else(excess_rentals < 0, excess_rentals, 0),
                   ymax = expected_rentals), color ="grey", fill = "red", alpha = 0.3) +
-  #And with green in other case
   geom_ribbon(aes(ymin = expected_rentals,
                   ymax = expected_rentals + if_else(excess_rentals > 0, excess_rentals, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
   scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
