@@ -501,15 +501,14 @@ p <- Trump_approval_margin %>%
 p
 ```
 
-<<<<<<< HEAD
+
 You can facet by year, and add an orange line at zero. Your plot should look like this:
 
 ```{r trump_margins, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
 ```
-=======
+
 ## Compare Confidence Intervals for week 15 and week 20 in 2020
->>>>>>> c328db46431fb29c4ccd87fe9303a735a867bb2c
 
 ```{r}
 Trump_approval_margin %>% 
@@ -535,6 +534,8 @@ Recall the `gapminder` data frame from the gapminder package. That data frame co
 
 You must use the `wbstats` package to download data from the World Bank. The relevant World Bank indicators are `SP.DYN.TFRT.IN`, `SE.PRM.NENR`, `NY.GDP.PCAP.KD`, and `SH.DYN.MORT`
 
+
+
 ```{r, get_data, cache=TRUE}
 
 # load gapminder HIV data
@@ -557,9 +558,9 @@ countries <-  wbstats::wb_cachelist$countries
 
 ```
 
-You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one. You may need to tidy your data first and then perform [join operations](http://r4ds.had.co.nz/relational-data.html). Think about what type makes the most sense **and explain why you chose it**.
+You have to join the 3 dataframes (life_expectancy, worldbank_data, and HIV) into one. You may need to tidy your data first and then perform [join operations](http://r4ds.had.co.nz/relational-data.html).
 
-I use left join, because left join enables to preserve the original observations even when there isn' a match. The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
+I use left_join(), because left_join() enables to preserve the original observations even when there isn't a match. What's more, left_join() is faster than merge(). The worldbank_data has the most entries, so left join life_expectancy and then hiv data to it.
 ```{r}
 hiv_tidy <- hiv %>% 
   pivot_longer(cols=c('1979':'2011'),names_to = "date",values_to = "hiv_percentage")
@@ -581,9 +582,11 @@ countries_data <- full_join(countries_data, hiv_tidy, by = c("country", "date"))
 
 1. What is the relationship between HIV prevalence and life expectancy? Generate a scatterplot with a smoothing line to report your results. You may find faceting useful
 
-For most regions, including East Asia & Pacific, Lattin America & Carribean, Middle East & North Africa, Sub-Seharan Africa, there exists a negative relationship between HIV prevalence and life expectancy.
-In North America and South Asia, the relaionship is not obvious, since the linear regression lines are nearly flat.
-In Europe & Central Asia, the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy.
+For most regions, including East Asia & Pacific, Latin America & Caribbean, Middle East & North Africa, there exists a negative relationship between HIV prevalence and life expectancy.
+In Europe & Central Asia and Sub-Saharan Africa the relationship becomes slightly positive, which means a higher HIV prevalence with higher life expectancy. However this trend seems not to be significant.
+In North America there are only two countries and therefore it is difficult to determine a trend.
+South Asia shows also a negative trend, however also here it doesn't seem to be significant.
+
 ```{r}
 countries_hiv_lifeexp <- countries_data %>%
   filter(date >= 1960, #very few datapoint before 1990
@@ -595,22 +598,22 @@ countries_hiv_lifeexp <- countries_data %>%
 
   ggplot(countries_hiv_lifeexp, aes(x = mean_hiv, y = mean_life_exp))+
   geom_point()+
-  geom_smooth()+
+  geom_smooth(method = lm)+
   facet_wrap(~region,scales="free")+ #faceting by countries will make too many plots and it can't show the whole trend
   theme_bw()+
   labs(x = "HIV Prevalence", 
-       y = "Life Expectancy", 
+       y = "Life Expectancy\n", 
        title = "Relationship between HIV Prevalence and Life Expectancy",
        subtitle = "Between 1960 and 2011")
 ```
 
 1. What is the relationship between fertility rate and GDP per capita? Generate a scatterplot with a smoothing line to report your results. You may find facetting by region useful
 
-For all regions, the relationships between fertility rate and GDP per capota are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
+For all regions, the relationships between fertility rate and GDP per capita are negative: the higher the fertility rate, the lower the GDP per capita. However, there are some exceptional countries in each region.
 ```{r}
 ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
   geom_point(size = 0.9)+
-  geom_smooth()+
+  geom_smooth(method=lm)+
   facet_wrap(~region,scale="free")+
   theme_bw()+
   labs(x = "GDP per Capita", 
@@ -621,7 +624,7 @@ ggplot(countries_data, aes(x = NY.GDP.PCAP.KD, y = SP.DYN.TFRT.IN))+
 1. Which regions have the most observations with missing HIV data? Generate a bar chart (`geom_col()`), in descending order.
 
 Europe & Central Asia has the most observations with missing HIV data.
-```{r}
+```{r, bar_chart_missing_HIV}
 countries_region_na <- countries_data %>%
   group_by(region) %>%
   summarise(missing_hiv = sum(!is.na(hiv_percentage)))
@@ -636,7 +639,7 @@ ggplot(countries_region_na, aes(x = missing_hiv, y = reorder(region, missing_hiv
 ```
 
 1. How has mortality rate for under 5 changed by region? In each region, find the top 5 countries that have seen the greatest improvement, as well as those 5 countries where mortality rates have had the least improvement or even deterioration.
-```{r}
+```{r, mortality_regions}
 countries_region_mortality <- countries_data %>%
   group_by(region,date) %>% 
   summarise(mean_mortality = mean(SH.DYN.MORT, na.rm = TRUE)) #drop NA to find mean, otherwise returns NA
@@ -646,17 +649,18 @@ ggplot(countries_region_mortality, aes(x=date,y = mean_mortality ))+
   facet_wrap(~region)+ 
   theme_bw()+
   labs(x="Date",y = " Mortality Per 1000 for Under 5",
-       title = " Mortality Rate for Under 5 changed by region")
+       title = " Mortality rate for under 5 changed by region")
 ```
-```{r}
+```{r, countries_mortality_improvements}
 countries_mortality_improvement <- select(countries_data, "country", "date", "region", "SH.DYN.MORT") %>%
   na.omit()%>% 
   group_by(country, region) %>%
   mutate(first_rate = first(SH.DYN.MORT), 
          last_rate = last(SH.DYN.MORT)) %>%
   summarise(improvement_rate = mean((first_rate - last_rate)/first_rate))
-  
-
+```
+## Asia top 5 and flop 5 countries in mortality improvement
+```{r, Asia}
 south_asia <- countries_mortality_improvement %>%
   filter(region == "South Asia") %>%
   arrange(desc(improvement_rate))
@@ -669,7 +673,9 @@ south_asia_top5
 ```{r}
 south_asia_tail5
 ```
-```{r}
+
+## East Asia & Pacific top 5 and flop 5 countries in mortality improvement
+```{r, east_asia}
 east_asia_pacific <- countries_mortality_improvement %>%
   filter(region == "East Asia & Pacific") %>%
   arrange(desc(improvement_rate))
@@ -682,6 +688,7 @@ east_asia_pacific_top5
 ```{r}
 east_asia_pacific_tail5
 ```
+## Europe & Central Asia top 5 and flop 5 countries in mortality improvement
 ```{r}
 europe_central_asia <- countries_mortality_improvement %>%
   filter(region == "Europe & Central Asia") %>%
@@ -695,6 +702,7 @@ europe_central_asia_top5
 ```{r}
 europe_central_asia_tail5
 ```
+## Latin America & Caribbean top 5 and flop 5 countries in mortality improvement
 ```{r}
 latin_america_caribbean <- countries_mortality_improvement %>%
   filter(region == "Latin America & Caribbean") %>%
@@ -709,6 +717,7 @@ latin_america_caribbean_top5
 ```{r}
 latin_america_caribbean_tail5
 ```
+## Middle East & North Africa top 5 and flop 5 countries in mortality improvement
 ```{r}
 middle_east_north_africa <- countries_mortality_improvement %>%
   filter(region == "Middle East & North Africa") %>%
@@ -722,6 +731,7 @@ middle_east_north_africa_top5
 ```{r}
 middle_east_north_africa_tail5 
 ```
+## North America (only two countries) in mortality improvement
 ```{r}
 north_america <- countries_mortality_improvement %>%
   filter(region == "North America") %>%
@@ -732,9 +742,7 @@ north_america_tail5 <-  north_america %>%
   tail(5)
 north_america_top5
 ```
-```{r}
-north_america_tail5 
-```
+## Subsaharan Africa top 5 and flop 5 countries in mortality improvement
 ```{r}
 subsaharan_africa <- countries_mortality_improvement %>%
   filter(region == "Sub-Saharan Africa") %>%
@@ -779,6 +787,7 @@ covid_data <- vroom(url)%>%
 library(scales)
 
 ```
+We used the method clean_names() to have proper column descriptions separated by a "_".
 
 We will replicate the two graphs as follows.
 
@@ -791,7 +800,7 @@ knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error 
 
 First we need to select data of interest - sex, age group, whether the patient had co-morbidities and whether the patient died, and clean missing and unknown values.
 
-```{r interest_data, echo=TRUE}
+```{r interest_data, echo=TRUE, fig.width=15}
 covid_death_rate_comorbidities<-covid_data %>% 
   filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),medcond_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% #filter for relevant values
   select(sex,age_group,death_yn,medcond_yn) %>% 
@@ -803,7 +812,7 @@ covid_death_rate_comorbidities<-covid_data %>%
 new_labels<-c('Yes'='With Comorbidities','No'='Without Comorbidities')
 
 ggplot(covid_death_rate_comorbidities,aes(x=death_rate,y=age_group))+
-geom_col(fill='navy')+
+geom_col(fill='navy', alpha = 0.7)+
 facet_grid(medcond_yn~sex,as.table=FALSE,labeller=labeller(medcond_yn=new_labels))+
   theme_bw()+
   geom_text(aes(label=round(death_rate,digits=1)),hjust=-0.1,size=3)+
@@ -818,7 +827,7 @@ facet_grid(medcond_yn~sex,as.table=FALSE,labeller=labeller(medcond_yn=new_labels
 We will calculate the covid death rate here.
 Finally we produce the plot showing the death rate by age group, sex and whether the patient had comorbidities.
 
-```{r covid_death_rate_medcond, echo=TRUE}
+```{r covid_death_rate_medcond, echo=TRUE, fig.width=15}
 covid_death_rate_icu<-covid_data %>% 
   filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),icu_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% 
   select(sex,age_group,death_yn,icu_yn) %>% 
@@ -978,5 +987,5 @@ It results in a more representing calculation of expected number of bikes hired 
 # Details
 
 - Who did you collaborate with: Matias, Philipp, Alex, Sena, Shengwei, Linda
-- Approximately how much time did you spend on this problem set: 15 hours
-- What, if anything, gave you the most trouble: Styling the graphs, knitting
+- Approximately how much time did you spend on this problem set: 6x15 hours
+- What, if anything, gave you the most trouble: Styling the graphs
