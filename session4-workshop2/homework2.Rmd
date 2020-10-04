@@ -483,7 +483,7 @@ glimpse(approval_polllist)
 ```
 
 ## Create a plot
-Trump's net approval rate each week faceted by year.
+We calculate the average net approval rate (approve- disapprove) for each week since he got into office. We plot the net approval, along with its 95% confidence interval.
 
 ```{r Trump_approval_margin}
 approval_polllist <- approval_polllist %>% 
@@ -505,7 +505,7 @@ Trump_approval_margin <- approval_polllist %>%
 ```
 
 ```{r picture_Trump_approval_margin, fig.height=10, fig.width=20}
-p <- Trump_approval_margin %>% 
+Trump_plot <- Trump_approval_margin %>% 
   ggplot(aes(x = week, y = mean_net_approval, color = as.factor(year))) +
   geom_ribbon(aes(ymin = low_net_approval, ymax = high_net_approval, fill = as.factor(year))) +
   geom_line() +
@@ -517,23 +517,25 @@ p <- Trump_approval_margin %>%
   scale_y_continuous(breaks = seq(-20, 7.5, by = 2.5)) +
   coord_fixed(ratio = 1/1.5) +
   geom_hline(aes(yintercept=0), color = "orange") +
-  labs(title = "Estimating Net Approval (approve-disapprove) for Donald Trump", 
-       subtitle = "Weekly average of all polls",
+  labs(title = "The average approval for Trump started to get volatile again recently", 
+       subtitle = "Estimating Net Approval (approve-disapprove) for Donald Trump (Weekly average of all polls)",
        x = "Week of the year",
        y = "Average Net Approval (%)") +
   theme(legend.position = "none") +
   theme_bw()
 
-p
+Trump_plot
 ```
 
-You can facet by year, and add an orange line at zero. Your plot should look like this:
+We facet by year, and add an orange line at zero.
 
 ```{r trump_margins, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
 ```
 
 ## Compare Confidence Intervals for week 15 and week 20 in 2020
+
+We compare the confidence intervals for 'week 15' (6-12 April 2020) and 'week 34' (17-23 August 2020).
 
 ```{r}
 Trump_approval_margin %>% 
@@ -542,8 +544,7 @@ Trump_approval_margin %>%
 
 ```
 
-Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net approval rate caused a higher standard error and therefore a larger confidence interval for week 34.
-
+Based on the results above, in week 34 confidence interval is longer due to a higher standard error which can be due to t-critical value or standard deviation. In both, week 15 and week 34 t-critical values are approximately the same, therefore standard distribution in week 34 is higher indicating poor results. It is then difficult to predict true mean. The reason of this fall might be Trump's attitude during the beginning of the Coronavirus outbreak.
 
 # Gapminder revisited
 
