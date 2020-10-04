@@ -167,11 +167,11 @@ ggplot(avg_annual_anomaly, aes(x=Year, y= annual_avg_delta))+
 
 > A one-degree global change is significant because it takes a vast amount of heat to warm all the oceans, atmosphere, and land by that much. In the past, a one- to two-degree drop was all it took to plunge the Earth into the Little Ice Age.
 
-Your task is to construct a confidence interval for the average annual delta since 2011, both using a formula and using a bootstrap simulation with the `infer` package. Recall that the dataframe `comparison` has already grouped temperature anomalies according to time intervals; we are only interested in what is happening  between 2011-present.
+Now, we construct a 95% confidence interval for our data.
 
 ```{r, calculate_CI_using_formula}
 
-formula_ci <- comparison %>% 
+calculate_ci <- comparison %>% 
   filter(interval == "2011-present")%>%
   summarise(mean_diff=mean(delta,na.rm = TRUE),
             sd_diff=sd(delta, na.rm = TRUE), 
@@ -181,16 +181,13 @@ formula_ci <- comparison %>%
             lower = mean_diff-t_critical*se_diff,
             upper = mean_diff+t_critical*se_diff)
 
-  # choose the interval 2011-present
-  # what dplyr verb will you use? 
-  # calculate summary statistics for temperature deviation (delta) 
-  # calculate mean, SD, count, SE, lower/upper 95% CI
-  # what dplyr verb will you use? 
-
 #print out formula_CI
-formula_ci
+calculate_ci
 ```
 
+The 95% confidence interval for delta is 0.916-1.02.
+
+Now, we use the bootstrap method to create a confidence interval.
 
 ```{r, calculate_CI_using_bootstrap}
 
@@ -210,9 +207,10 @@ percentile_ci <- data_infer %>%
 percentile_ci
 ```
 
-> What is the data showing us? Please type your answer after (and outside!) this blockquote. You have to explain what you have done, and the interpretation of the result. One paragraph max, please!
-
 The data shows us (for both methods, with the formula as well as with the infer package) that we can be 95% sure that the real mean of the population of temperature differences lies between 0.917 and 1.02.
+
+
+Here, we’ve created two confidence intervals, one using our dataset, and the other via bootstrapping for mean delta. The bootstrap method generated 1000 samples from our dataset with replacement, in order to approximate the distribution and estimate sample-to-sample variability. The bootstrap confidence interval shows us that we can be 95% confident that the true average delta between 2011-present lies between 0.917 and 1.02.
 
 # General Social Survey (GSS)
 
