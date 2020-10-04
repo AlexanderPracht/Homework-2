@@ -66,10 +66,10 @@ Then we select the year and the months from the ‘weather’ dataset and conver
 ```{r tidyweather}
 tidyweather <- weather %>%
   select(c(Year,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec))%>%
-  pivot_longer(cols = 2:13, names_to = "Month", values_to = "Delta")
+  pivot_longer(cols = 2:13, names_to = "Month", values_to = "delta")
 glimpse(tidyweather)
 ```
-We observe that the dataframe has 3 variables: Year, Month, and Delta (Temparature Deviation)
+We observe that the dataframe has 3 variables: Year, Month, and Delta (Temperature Deviation)
 
 ## 1.a Plotting Information
 
@@ -81,19 +81,22 @@ tidyweather <- tidyweather %>%
          month = month(date, label=TRUE),
          year = year(date))
 
-ggplot(tidyweather, aes(x=date, y = Delta))+
+ggplot(tidyweather, aes(x=date, y = delta))+
   geom_point()+
   geom_smooth(color="red") +
   theme_bw() +
   labs (
-    title = "Weather Anomalies"
-  )
+    subtitle = "Weather Anomalies", 
+    title = "Weather is becoming warmer and warmer"
+  )+
+  xlab("Date")+
+  ylab("Temperature Deviation per month")
 ```
 
 We create a scatter plot for each month.
 
 ```{r facet_wrap, echo=FALSE}
-ggplot(tidyweather, aes(x=date, y=Delta))+
+ggplot(tidyweather, aes(x=date, y=delta))+
   geom_point()+
   geom_smooth(color="red") +
   theme_bw() +
@@ -101,7 +104,9 @@ ggplot(tidyweather, aes(x=date, y=Delta))+
   labs (
     title= "The effect of increasing temperature is observed in all months"
     ,subtitle = "Weather Anomalies for each month"
-  )
+  )+
+  xlab("Year")+
+  ylab("Temperature Deviation per month")
 ```
 
 Looking at the plot we created, we observe that delta is increasing over time for all months. However, it seems that this increase is more pronounced in Winter. For instance, in October - March, the delta is closer to 1.5, whereas in the summer months it is around 1.
@@ -141,12 +146,12 @@ ggplot(comparison, aes(x=delta, fill=interval))+
 
 So far, we have been working with monthly anomalies. However, we might be interested in average annual anomalies. We can do this by using `group_by()` and `summarise()`, followed by a scatter plot to display the result. 
 
-```{r averaging}
+```{r, averaging}
 
 avg_annual_anomaly <- tidyweather %>% 
   group_by(Year) %>%  
   # creating summaries for mean delta 
-  summarise(annual_avg_delta = mean(Delta, na.rm=TRUE)) 
+  summarise(annual_avg_delta = mean(delta, na.rm=TRUE)) 
 
 ggplot(avg_annual_anomaly, aes(x=Year, y= annual_avg_delta))+
   geom_point()+
