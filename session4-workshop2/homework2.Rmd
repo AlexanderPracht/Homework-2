@@ -265,6 +265,7 @@ In this assignment we analyze data from the **2016 GSS sample data**, using it t
 gss <- read_csv(here::here("data", "smallgss2016.csv"), 
                 na = c("", "Don't know",
                        "No answer", "Not applicable"))
+glimpse(gss)
 ```
 
 You will also notice that many responses should not be taken into consideration, like "No Answer", "Don't Know", "Not applicable", "Refused to Answer".
@@ -287,24 +288,45 @@ Can we estimate the *population* proportion of Snapchat or Instagram users in 20
 social_media <- gss%>%
   mutate(snap_insta = if_else(snapchat == "NA" & instagrm == "NA", "NA", if_else(snapchat == "Yes" | instagrm == "Yes", "Yes", "No")))
 
-social_media_stats <- social_media%>%
+glimpse(social_media)
+
+social_media_stats <- social_media %>%
   group_by(snap_insta)%>%
   count(snap_insta)%>%
   pivot_wider(names_from=snap_insta, values_from = n )%>%
   mutate(proportion_yes = Yes/(Yes+No))
 
+social_media_summary <- social_media %>% 
+  filter(snap_insta != "NA") %>% 
+  mutate(snap_insta_num = snap_insta == "Yes") %>% 
+  group_by(sex) %>% 
+  summarise(count = n(),
+            mean_prob = mean(snap_insta_num),
+            sd_prob = sd(snap_insta_num),
+            t_critical_95 = qt(0.975, count-1),
+            lower_bound = mean_prob - t_critical_95 * (sd_prob/(count)^0.5),
+            upper_bound = mean_prob + t_critical_95 * (sd_prob/(count)^0.5)
+            )
 
-ci_props <- social_media%>%
-  group_by(sex, snap_insta)%>%
-  count(snap_insta)%>%
-  pivot_wider(names_from = snap_insta, values_from = n)%>%
-  mutate(mean = Yes/(Yes+No),
-         se = sqrt(mean*(1-mean)/(Yes+No)),
-         t_critical = qt(0.975,(Yes+No)-1),
-         lower = mean - t_critical*se,
-         upper = mean + t_critical*se)
-
+social_media_summary
 ```
+
+```{r}
+ggplot(social_media_summary, 
+       aes(sex, mean_prob, ymin = lower_bound, ymax = upper_bound))+
+  geom_errorbar(width = 0.2, size = 1) +
+  geom_point(size = 5) +
+  theme_bw() +
+  #xlim(0.2, 0.8) +
+  #labs(x=NULL, y= "Sample mean and 95% CIs") +
+  labs(title = "CIs for males/females who use Snapchat or Instagram do not overlap",
+       subtitle = "Proportion of people using either Snapchat or Instagram by gender",
+       x="Sex (Males/Female)", y= "Proportion of people using Snapchat or Instagram") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_rect(aes(xmin = 0, xmax = 3, ymin = social_media_summary$upper_bound[2], ymax=social_media_summary$lower_bound[1]), fill = "red", alpha = 0.2, size=0.1) +
+  NULL
+```
+We observe that these two intervals do not overlap.
 
 
 ## Twitter, by education level
@@ -338,6 +360,8 @@ twitter_education <- social_media %>%
          upper_no = (1-proportion_yes) + t_critical*se)
 
 ```
+
+
 No the 2 intervals do not overlap.
 
 
@@ -357,8 +381,6 @@ email_data <- social_media%>%
 
 # Trump's Approval Margins
 
-As we saw in class, fivethirtyeight.com has detailed data on [all polls that track the president's approval ](https://projects.fivethirtyeight.com/trump-approval-ratings)
-
 ```{r, cache=TRUE}
 # Import approval polls data
 approval_polllist <- read_csv(here::here('data', 'approval_polllist.csv'))
@@ -372,8 +394,7 @@ glimpse(approval_polllist)
 ```
 
 ## Create a plot
-
-What I would like you to do is to calculate the average net approval rate (approve- disapprove) for each week since he got into office. I want you plot the net approval, along with its 95% confidence interval. There are various dates given for each poll, please use `enddate`, i.e., the date the poll ended.
+Trump's net approval rate each week faceted by year.
 
 ```{r Trump_approval_margin}
 approval_polllist <- approval_polllist %>% 
@@ -417,21 +438,15 @@ p <- Trump_approval_margin %>%
 p
 ```
 
-You can facet by year, and add an orange line at zero. Your plot should look like this:
+## Compare Confidence Intervals for week 15 and week 20 in 2020
 
-```{r trump_margins, echo=FALSE, out.width="100%"}
-knitr::include_graphics(here::here("session4-workshops/images", "trump_approval_margin.png"), error = FALSE)
-```
-
-## Compare Confidence Intervals
-
-Compare the confidence intervals for `week 15` (6-12 April 2020) and `week 34` (17-23 August 2020). Can you explain what's going on? One paragraph would be enough.
 ```{r}
 Trump_approval_margin %>% 
   filter(week %in% c(15, 34), year == 2020) %>% 
   select(c(year, week, low_net_approval, high_net_approval))
 
 ```
+
 Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net approval rate caused a higher standard error and therefore a larger confidence interval for week 34.
 
 
@@ -461,7 +476,7 @@ indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
 library(wbstats)
 
-worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
+worldbank_data <- read_csv(here::here("session4-workshop2/data","worldbank_data.csv")) %>% 
   select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
         
                          
