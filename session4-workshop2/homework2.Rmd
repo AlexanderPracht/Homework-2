@@ -265,6 +265,7 @@ In this assignment we analyze data from the **2016 GSS sample data**, using it t
 gss <- read_csv(here::here("data", "smallgss2016.csv"), 
                 na = c("", "Don't know",
                        "No answer", "Not applicable"))
+glimpse(gss)
 ```
 
 You will also notice that many responses should not be taken into consideration, like "No Answer", "Don't Know", "Not applicable", "Refused to Answer".
@@ -287,24 +288,45 @@ Can we estimate the *population* proportion of Snapchat or Instagram users in 20
 social_media <- gss%>%
   mutate(snap_insta = if_else(snapchat == "NA" & instagrm == "NA", "NA", if_else(snapchat == "Yes" | instagrm == "Yes", "Yes", "No")))
 
-social_media_stats <- social_media%>%
+glimpse(social_media)
+
+social_media_stats <- social_media %>%
   group_by(snap_insta)%>%
   count(snap_insta)%>%
   pivot_wider(names_from=snap_insta, values_from = n )%>%
   mutate(proportion_yes = Yes/(Yes+No))
 
+social_media_summary <- social_media %>% 
+  filter(snap_insta != "NA") %>% 
+  mutate(snap_insta_num = snap_insta == "Yes") %>% 
+  group_by(sex) %>% 
+  summarise(count = n(),
+            mean_prob = mean(snap_insta_num),
+            sd_prob = sd(snap_insta_num),
+            t_critical_95 = qt(0.975, count-1),
+            lower_bound = mean_prob - t_critical_95 * (sd_prob/(count)^0.5),
+            upper_bound = mean_prob + t_critical_95 * (sd_prob/(count)^0.5)
+            )
 
-ci_props <- social_media%>%
-  group_by(sex, snap_insta)%>%
-  count(snap_insta)%>%
-  pivot_wider(names_from = snap_insta, values_from = n)%>%
-  mutate(mean = Yes/(Yes+No),
-         se = sqrt(mean*(1-mean)/(Yes+No)),
-         t_critical = qt(0.975,(Yes+No)-1),
-         lower = mean - t_critical*se,
-         upper = mean + t_critical*se)
-
+social_media_summary
 ```
+
+```{r}
+ggplot(social_media_summary, 
+       aes(sex, mean_prob, ymin = lower_bound, ymax = upper_bound))+
+  geom_errorbar(width = 0.2, size = 1) +
+  geom_point(size = 5) +
+  theme_bw() +
+  #xlim(0.2, 0.8) +
+  #labs(x=NULL, y= "Sample mean and 95% CIs") +
+  labs(title = "CIs for males/females who use Snapchat or Instagram do not overlap",
+       subtitle = "Proportion of people using either Snapchat or Instagram by gender",
+       x="Sex (Males/Female)", y= "Proportion of people using Snapchat or Instagram") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_rect(aes(xmin = 0, xmax = 3, ymin = social_media_summary$upper_bound[2], ymax=social_media_summary$lower_bound[1]), fill = "red", alpha = 0.2, size=0.1) +
+  NULL
+```
+We observe that these two intervals do not overlap.
 
 
 ## Twitter, by education level
@@ -338,6 +360,8 @@ twitter_education <- social_media %>%
          upper_no = (1-proportion_yes) + t_critical*se)
 
 ```
+
+
 No the 2 intervals do not overlap.
 
 
@@ -357,8 +381,6 @@ email_data <- social_media%>%
 
 # Trump's Approval Margins
 
-As we saw in class, fivethirtyeight.com has detailed data on [all polls that track the president's approval ](https://projects.fivethirtyeight.com/trump-approval-ratings)
-
 ```{r, cache=TRUE}
 # Import approval polls data
 approval_polllist <- read_csv(here::here('data', 'approval_polllist.csv'))
@@ -372,8 +394,7 @@ glimpse(approval_polllist)
 ```
 
 ## Create a plot
-
-What I would like you to do is to calculate the average net approval rate (approve- disapprove) for each week since he got into office. I want you plot the net approval, along with its 95% confidence interval. There are various dates given for each poll, please use `enddate`, i.e., the date the poll ended.
+Trump's net approval rate each week faceted by year.
 
 ```{r Trump_approval_margin}
 approval_polllist <- approval_polllist %>% 
@@ -417,21 +438,23 @@ p <- Trump_approval_margin %>%
 p
 ```
 
+<<<<<<< HEAD
 You can facet by year, and add an orange line at zero. Your plot should look like this:
 
 ```{r trump_margins, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
 ```
+=======
+## Compare Confidence Intervals for week 15 and week 20 in 2020
+>>>>>>> c328db46431fb29c4ccd87fe9303a735a867bb2c
 
-## Compare Confidence Intervals
-
-Compare the confidence intervals for `week 15` (6-12 April 2020) and `week 34` (17-23 August 2020). Can you explain what's going on? One paragraph would be enough.
 ```{r}
 Trump_approval_margin %>% 
   filter(week %in% c(15, 34), year == 2020) %>% 
   select(c(year, week, low_net_approval, high_net_approval))
 
 ```
+
 Trump's net approval rate decreased greatly from 2020 week 15 to week 34, with larger interval. I think the reason of lower net approval rate is that most people were disappointed with Trump's inability to contain coronavirus. What's more, the greater deviation in net approval rate caused a higher standard error and therefore a larger confidence interval for week 34.
 
 
@@ -461,7 +484,7 @@ indicators <- c("SP.DYN.TFRT.IN","SE.PRM.NENR", "SH.DYN.MORT", "NY.GDP.PCAP.KD")
 
 library(wbstats)
 
-worldbank_data <- read_csv(here::here("data","worldbank_data.csv")) %>% 
+worldbank_data <- read_csv(here::here("session4-workshop2/data","worldbank_data.csv")) %>% 
   select(country,date,SP.DYN.TFRT.IN,SE.PRM.NENR, SH.DYN.MORT, NY.GDP.PCAP.KD)
         
                          
@@ -583,8 +606,9 @@ ggplot(join,aes(x=SE.PRM.NENR, y =SP.DYN.TFRT.IN ))+
 
 # Challenge 1: CDC COVID-19 Public Use Data
 
-Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). There are well over 3 million entries of individual, de-identified patient data. Since this is a large file, I suggest you use `vroom` to load it and you keep `cache=TRUE` in the chunk options.
+# Challenge 1: CDC COVID-19 Public Use Data
 
+Let us revisit the [CDC Covid-19 Case Surveillance Data](https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf). 
 
 ```{r, cache=TRUE}
 # URL link to CDC to download data
@@ -594,25 +618,26 @@ covid_data <- vroom(url)%>%
   clean_names()
 ```
 
-Given the data we have, I would like you to produce two graphs that show death % rate:
-
-1. by age group, sex, and whether the patient had co-morbidities or not
-1. by age group, sex, and whether the patient was admited to Intensive Care Unit (ICU) or not.
-
+We will replicate the two graphs as follows.
 
 ```{r covid_challenge, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "covid_death_rate_comorbidities.png"), error = FALSE)
 knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error = FALSE)
-
 ```
 
-We start with the graphs:
-```{r covid_challenge, echo=FALSE"}
-graph1_deaths <- covid_data %>% 
-  select(sex, age_group, medcond_yn, death_yn) %>% #we remove the missing entries for the selected variablbes
+## Covid death % by age group, sex and whether the patient had co-morbidities
+
+First we need to select data of interest - sex, age group, whether the patient had co-morbidities and whether the patient died, and clean missing and unknown values.
+
+```{r interest_data, echo=TRUE}
+covid_death <-covid_data %>% 
+  #select column of interest
+  select(sex, age_group, medcond_yn, death_yn) %>% 
+  #Remove missing and unknown values
   filter(sex %in% c("Male", "Female"), 
          age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
          medcond_yn %in% c("Yes", "No"),
+<<<<<<< HEAD
          death_yn %in% c("Yes", "No")) %>%
   group_by(sex, age_group, medcond_yn) %>% #group by variables we need
   summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No") %>%
@@ -623,25 +648,120 @@ graph1_deaths <- covid_data %>%
   ggplot(graph1_deaths, aes(x = age_group,y = death_rate)) +
   geom_col()  
 
+=======
+         death_yn %in% c("Yes", "No"))
+  
+>>>>>>> c328db46431fb29c4ccd87fe9303a735a867bb2c
 ```
 
+We will calculate the covid death rate here.
 
-The second graph:
-```{r covid_challenge, echo=FALSE"}
+```{r death_rate_medcond}
+covid_death_rate_medcond <- covid_death %>% 
+  #group by age group, sex and whether the patient had co-morbidities
+  group_by(age_group, sex, medcond_yn) %>% 
+  #calculate death rate
+  summarise (yes = sum(death_yn == "Yes"),
+             no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+ 
+```
 
-graph2_deaths <-covid_data %>% 
+```{r replace_name, echo=TRUE}
+# Turn `medcond_yn` from character to a factor variable and replace the names
+covid_death_rate_medcond <- covid_death_rate_medcond %>% 
+  mutate(medcond_yn = factor(medcond_yn, 
+                       levels = c("Yes", "No"),
+                       labels = c("With comorbidities", "Without comorbidities")))
+covid_death_rate_medcond
+```
+Finally we produce the plot showing the death rate by age group, sex and whether the patient had comorbidities.
+
+```{r covid_death_rate_medcond, echo=TRUE}
+# Plot object
+ggplot(covid_death_rate_medcond, aes(x = age_group,y = death_rate)) +
+  # Add columns (pre-counted)
+  geom_col(fill = "#1D1FAB", show.legend=FALSE, alpha=0.7, width =0.7) +  # Add a bit of trans[arecy and reduce width
+  # Add labels to columns
+  geom_text(aes(label=round(death_rate, digits = 1)), #round the data label to one decimal
+            hjust=0.08,
+            size=2) +
+  theme_bw() +
+  facet_grid(medcond_yn ~ sex, scales="free") + #facet by whether the patient had comorbidities and sex presence
+  # Flip horizontal
+  coord_flip() +
+  # Add labels
+  labs (title = "Covid death % by age group, sex and presence of co-morbidities",
+        xlab = "",
+        ylab = "",
+        caption = "Source: CDC") +
+  # Remove extras
+  theme(axis.title.x = element_blank(), #remove unnecessary x and y axis title
+        axis.title.y = element_blank())
+
+```
+## Covid death % by age group, sex and whether the patient was admitted to ICU
+
+First we need to select data of interest - sex, age group, whether the patient was admitted to ICU and whether the patient died, and remove missing and unknown values.
+
+```{r interest_2, echo=TRUE}
+covid_death <-covid_data %>% 
+  #select column of interest
   select(sex, age_group, icu_yn, death_yn) %>% 
+  #Remove missing and unknown values
   filter(sex %in% c("Male", "Female"), 
          age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
          icu_yn %in% c("Yes", "No"),
          death_yn %in% c("Yes", "No"))
-         group_by(age_group, sex, icu_yn) %>%
-         summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No"),
-             death_rate = (yes/sum(yes+no))*100)
-
-         ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
-             geom_col()
+  
 ```
+
+We will calculate the death rate here. 
+
+```{r death_rate_icu, echo=TRUE}
+covid_death_rate_icu <- covid_death %>%
+  #group by age group, sex and whether the patient was admitted to ICU
+  group_by(age_group, sex, icu_yn) %>%
+  #calculate death rate
+  summarise (yes = sum(death_yn == "Yes"),
+             no = sum(death_yn == "No"),
+             death_rate = (yes/sum(yes+no))*100)
+```
+
+```{r replace_name_2, echo=TRUE}
+# Turn `icu_yn` from character to a factor variable
+covid_death_rate_icu <- covid_death_rate_icu %>% 
+  mutate(icu_yn = factor(icu_yn, 
+                       levels = c("Yes", "No"),
+                       labels = c("Admitted to ICU", "No ICU")))
+```
+
+Finally we produce the plot showing the death rate by age group, sex and whether the patient was admitted to ICU.
+
+```{r covid_death_rate_icu, echo=TRUE}
+# plot object
+
+ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
+  # Add columns (pre-counted)
+  geom_col(fill = "#fcae91", show.legend=FALSE, alpha=0.9, width=0.7) + # add a bit of transparecy and reduce width
+  # Add theme
+  theme_bw() +
+  # Add text
+  geom_text(aes(label=round(death_rate, digits = 1)),
+            hjust=0.08,
+            size=2) +
+  facet_grid(icu_yn ~ sex, scales="free") +
+  # Flip horizontal
+  coord_flip() +
+  # Add lables
+  labs (title = "Covid death % by age group, sex and whether the patient was admitted to ICU",
+        xlab = "",
+        ylab = "",
+        caption = "Source: CDC") +
+  # Remove extras
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
 
 # Challenge 2: Excess rentals in TfL bike sharing
 
@@ -689,6 +809,26 @@ The second one looks at percentage changes from the expected level of weekly ren
 knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
+```{r tfl_calc, echo=FALSE, out.width="100%"}
+
+bike1 <- bike %>% 
+  group_by(year,month) %>%   #grouping data by Year
+  summarise(actual_rentals = sum(bikes_hired, na.rm=TRUE)) %>% 
+  group_by(month) %>%   #grouping data by Year
+  mutate(expected_rentals = mean(actual_rentals, na.rm=TRUE)) %>% 
+  mutate(date = make_date(year, month, 1))
+
+ggplot(bike1, aes(x=month, y=actual_rentals))+
+  geom_smooth()+
+  #geom_smooth(color="red") +
+  #theme_bw() +
+  facet_wrap(~year)+
+  labs (
+    title= ""
+    ,subtitle = ""
+  )
+
+```
 For both of these graphs, you have to calculate the expected number of rentals per week or month between 2015-2019 and then, see how each week/month of 2020 compares to the expected rentals. Think of the calculation `excess_rentals = actual_rentals - expected_rentals`. 
 
 Should you use the mean or the median to calculate your expected rentals? Why?
