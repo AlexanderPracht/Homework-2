@@ -904,7 +904,7 @@ bike <- bike0 %>%
   clean_names() %>% 
   rename (bikes_hired = number_of_bicycle_hires) %>% 
   mutate (year = year(day),
-          month = lubridate::month(day, label = TRUE),
+          month = lubridate::month(day, label = TRUE, locale= "English"),
           week = isoweek(day))
 ```
 
