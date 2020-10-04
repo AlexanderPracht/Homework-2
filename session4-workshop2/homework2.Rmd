@@ -820,6 +820,8 @@ url <- "https://data.cdc.gov/api/views/vbim-akqf/rows.csv?accessType=DOWNLOAD"
 
 covid_data <- vroom(url)%>%
   clean_names()
+library(scales)
+
 ```
 
 We will replicate the two graphs as follows.
@@ -834,139 +836,54 @@ knitr::include_graphics(here::here("images", "covid_death_rate_icu.png"), error 
 First we need to select data of interest - sex, age group, whether the patient had co-morbidities and whether the patient died, and clean missing and unknown values.
 
 ```{r interest_data, echo=TRUE}
-covid_death <-covid_data %>% 
-  #select column of interest
-  select(sex, age_group, medcond_yn, death_yn) %>% 
-  #Remove missing and unknown values
-  filter(sex %in% c("Male", "Female"), 
-         age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
-         medcond_yn %in% c("Yes", "No"),
-<<<<<<< HEAD
-         death_yn %in% c("Yes", "No")) %>%
-  group_by(sex, age_group, medcond_yn) %>% #group by variables we need
-  summarise (yes = sum(death_yn == "Yes"), no = sum(death_yn == "No") %>%
-               mutate(death_rate = (yes/sum(yes+no))*100))
-             
-             
+covid_death_rate_comorbidities<-covid_data %>% 
+  filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),medcond_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% #filter for relevant values
+  select(sex,age_group,death_yn,medcond_yn) %>% 
+  group_by(sex,age_group,medcond_yn) %>% 
+  summarize(death=sum(death_yn=="Yes"),total=n()) %>% 
+  mutate(death_rate=(death/total*100)) %>% 
+  select(sex,age_group,medcond_yn,death_rate)
 
-  ggplot(graph1_deaths, aes(x = age_group,y = death_rate)) +
-  geom_col()  
+new_labels<-c('Yes'='With Comorbidities','No'='Without Comorbidities')
 
-=======
-         death_yn %in% c("Yes", "No"))
+ggplot(covid_death_rate_comorbidities,aes(x=death_rate,y=age_group))+
+geom_col(fill='navy')+
+facet_grid(medcond_yn~sex,as.table=FALSE,labeller=labeller(medcond_yn=new_labels))+
+  theme_bw()+
+  geom_text(aes(label=round(death_rate,digits=1)),hjust=-0.1,size=3)+
+  expand_limits(x=c(0,72))+
+  scale_x_continuous(labels=label_percent(scale=1))+
+  labs(title='Covid death % percent by age group, sex, and presence of co-morbidities',x='',y='',caption='Source:CDC')+
+  theme(plot.title=element_text(size=9))
   
->>>>>>> c328db46431fb29c4ccd87fe9303a735a867bb2c
+
 ```
 
 We will calculate the covid death rate here.
-
-```{r death_rate_medcond}
-covid_death_rate_medcond <- covid_death %>% 
-  #group by age group, sex and whether the patient had co-morbidities
-  group_by(age_group, sex, medcond_yn) %>% 
-  #calculate death rate
-  summarise (yes = sum(death_yn == "Yes"),
-             no = sum(death_yn == "No"),
-             death_rate = (yes/sum(yes+no))*100)
- 
-```
-
-```{r replace_name, echo=TRUE}
-# Turn `medcond_yn` from character to a factor variable and replace the names
-covid_death_rate_medcond <- covid_death_rate_medcond %>% 
-  mutate(medcond_yn = factor(medcond_yn, 
-                       levels = c("Yes", "No"),
-                       labels = c("With comorbidities", "Without comorbidities")))
-covid_death_rate_medcond
-```
 Finally we produce the plot showing the death rate by age group, sex and whether the patient had comorbidities.
 
 ```{r covid_death_rate_medcond, echo=TRUE}
-# Plot object
-ggplot(covid_death_rate_medcond, aes(x = age_group,y = death_rate)) +
-  # Add columns (pre-counted)
-  geom_col(fill = "#1D1FAB", show.legend=FALSE, alpha=0.7, width =0.7) +  # Add a bit of trans[arecy and reduce width
-  # Add labels to columns
-  geom_text(aes(label=round(death_rate, digits = 1)), #round the data label to one decimal
-            hjust=0.08,
-            size=2) +
-  theme_bw() +
-  facet_grid(medcond_yn ~ sex, scales="free") + #facet by whether the patient had comorbidities and sex presence
-  # Flip horizontal
-  coord_flip() +
-  # Add labels
-  labs (title = "Covid death % by age group, sex and presence of co-morbidities",
-        xlab = "",
-        ylab = "",
-        caption = "Source: CDC") +
-  # Remove extras
-  theme(axis.title.x = element_blank(), #remove unnecessary x and y axis title
-        axis.title.y = element_blank())
+covid_death_rate_icu<-covid_data %>% 
+  filter(sex %in% c('Male','Female'),!age_group %in% c('Unknown',NA),icu_yn %in% c('Yes','No'),death_yn %in% c('Yes','No')) %>% 
+  select(sex,age_group,death_yn,icu_yn) %>% 
+  group_by(sex,age_group,icu_yn) %>% 
+  summarize(death=sum(death_yn=="Yes"),total=n()) %>% 
+  mutate(death_rate=(death/total*100)) %>% 
+  select(sex,age_group,icu_yn,death_rate)
+
+new_labels_icu<-c('Yes'='Admitted to ICU','No'='No ICU')
+
+ggplot(covid_death_rate_icu,aes(x=death_rate,y=age_group))+
+geom_col(fill='#ffa084')+
+facet_grid(icu_yn~sex,as.table=FALSE,labeller=labeller(icu_yn=new_labels_icu))+
+  theme_bw()+
+  geom_text(aes(label=round(death_rate,digits=1)),hjust=-0.1,size=3)+
+  expand_limits(x=c(0,85))+
+  scale_x_continuous(labels=label_percent(scale=1))+
+  labs(title='Covid death % percent by age group, sex, and weather patient was admitted to ICU',x='',y='',caption='Source:CDC')+
+  theme(plot.title=element_text(size=9)) 
 
 ```
-## Covid death % by age group, sex and whether the patient was admitted to ICU
-
-First we need to select data of interest - sex, age group, whether the patient was admitted to ICU and whether the patient died, and remove missing and unknown values.
-
-```{r interest_2, echo=TRUE}
-covid_death <-covid_data %>% 
-  #select column of interest
-  select(sex, age_group, icu_yn, death_yn) %>% 
-  #Remove missing and unknown values
-  filter(sex %in% c("Male", "Female"), 
-         age_group %in% c("0 - 9 Years", "10 - 19 Years", "20 - 29 Years", "30 - 39 Years", "40 - 49 Years", "50 - 59 Years","60 - 69 Years", "70 - 79 Years", "80+ Years"),
-         icu_yn %in% c("Yes", "No"),
-         death_yn %in% c("Yes", "No"))
-  
-```
-
-We will calculate the death rate here. 
-
-```{r death_rate_icu, echo=TRUE}
-covid_death_rate_icu <- covid_death %>%
-  #group by age group, sex and whether the patient was admitted to ICU
-  group_by(age_group, sex, icu_yn) %>%
-  #calculate death rate
-  summarise (yes = sum(death_yn == "Yes"),
-             no = sum(death_yn == "No"),
-             death_rate = (yes/sum(yes+no))*100)
-```
-
-```{r replace_name_2, echo=TRUE}
-# Turn `icu_yn` from character to a factor variable
-covid_death_rate_icu <- covid_death_rate_icu %>% 
-  mutate(icu_yn = factor(icu_yn, 
-                       levels = c("Yes", "No"),
-                       labels = c("Admitted to ICU", "No ICU")))
-```
-
-Finally we produce the plot showing the death rate by age group, sex and whether the patient was admitted to ICU.
-
-```{r covid_death_rate_icu, echo=TRUE}
-# plot object
-
-ggplot(covid_death_rate_icu, aes(x=age_group, y=death_rate)) +
-  # Add columns (pre-counted)
-  geom_col(fill = "#fcae91", show.legend=FALSE, alpha=0.9, width=0.7) + # add a bit of transparecy and reduce width
-  # Add theme
-  theme_bw() +
-  # Add text
-  geom_text(aes(label=round(death_rate, digits = 1)),
-            hjust=0.08,
-            size=2) +
-  facet_grid(icu_yn ~ sex, scales="free") +
-  # Flip horizontal
-  coord_flip() +
-  # Add lables
-  labs (title = "Covid death % by age group, sex and whether the patient was admitted to ICU",
-        xlab = "",
-        ylab = "",
-        caption = "Source: CDC") +
-  # Remove extras
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-
 # Challenge 2: Excess rentals in TfL bike sharing
 
 Recall the TfL data on how many bikes were hired every single day. We can get the latest data by running the following
@@ -992,7 +909,6 @@ bike <- bike0 %>%
 ```
 
 
-
 We can easily create a facet grid that plots bikes hired by month and year.
 
 ```{r tfl_month_year_grid, echo=FALSE, out.width="100%"}
@@ -1014,70 +930,92 @@ knitr::include_graphics(here::here("images", "tfl_weekly.png"), error = FALSE)
 ```
 
 ```{r tfl_calc, echo=FALSE, out.width="100%", fig.width=10, fig.height=7}
-bike_data <- bike%>%
-  filter(year %in% c(2015:2019))%>%
-  group_by(year,month)%>%
-  summarise(bikes_month=sum(bikes_hired), n=n())%>%
-  mutate(average_month_perday = bikes_month/n)%>%
-  ungroup()%>%
-  group_by(month)%>%
-  summarise(avg_15_19=sum(average_month_perday)/n())%>%
-  ungroup()
+bike_filtered <- bike %>%
+                  filter(year %in% c(2015: 2020)) %>%
+                  group_by(year, month) %>%
+                  summarise(avgMonth=mean(bikes_hired))
 
-bike_data2 <- bike%>%
-  filter(year %in% c(2015:2020))%>%
-  group_by(year,month)%>%
-  summarize(bikes_per_month = sum(bikes_hired)/n())
+bike_monthly_average <- bike_filtered %>%
+                  filter(year %in% c(2015: 2019)) %>%
+                  group_by(month) %>%
+                  summarise(year_avgMonth=mean(avgMonth))
 
-bike_data3 <- left_join(bike_data, bike_data2)
+# Change month to numeric
+bike_filtered$month <- as.numeric(bike_filtered$month)
 
-ggplot(bike_data3)+
-  geom_line(aes(month, bikes_per_month, group=1))+
-  geom_line(aes(month, avg_15_19, group=1), color = "blue")+
-   facet_wrap(~year)+
-  geom_ribbon(aes(month, ymin = pmin(bikes_per_month,avg_15_19), ymax= avg_15_19,group = year),show.legend = FALSE,fill="red",alpha=0.2)+
-  geom_ribbon(aes(month, ymin = pmin(bikes_per_month,avg_15_19), ymax= bikes_per_month,group = year),show.legend = FALSE,fill="green", alpha=0.2)+
-  labs(title="Monthly changes in Tfl bike rentals", subtitle = "Change from monthly average shown in blue \nand calculated between 2015-2019", y="Bike rentals", x=NULL)+
-  theme(strip.background = element_rect(fill = "white", size = 0.5),
-        panel.background = element_rect(fill="white"),
-        panel.grid = element_line(colour = "grey"),
-        plot.title = element_text(size=20),
-        axis.title.y = element_blank())
+# Change month to numeric
+bike_monthly_average$month <- as.numeric(bike_monthly_average$month)
+
+
+bike_left_join_1 <-left_join(bike_filtered,bike_monthly_average, by="month")
+
+bike_left_join_2 <- bike_left_join_1 %>%
+  mutate(diff_month = avgMonth-year_avgMonth)
+
+
+bike_left_join_2
+
+
   
 
+```
+```{r}
+bike_left_join_2$month <- as.numeric(bike_left_join_2$month)
+bike_left_join_2$month <- as.factor(bike_left_join_2$month)
+
+ggplot(data=bike_left_join_2, aes(x=month , y=year_avgMonth, group=1)) + facet_wrap(~year) + 
+labs(x=NULL, y="Bike Rentals", caption="Source: TfL, London Data Store", title="Monthly changes in TfL bike rentals", subtitle= "Change from monthly average shown in blue \nand calculated between 2015-2019") + theme_minimal(base_family="Arial") + theme (plot.title = element_text(size=10), plot.subtitle = element_text(size=9))+
+  #+ geom_line(aes(x=month, y = year_avgMonth), size=1.2, colour="blue") +
+#+ geom_line(aes(x=month, y=avgMonth), color="black", size=1.2)
+  geom_ribbon(aes(ymin = year_avgMonth + if_else(diff_month < 0, diff_month, 0),
+                  ymax = year_avgMonth), color ="grey", fill = "red", alpha = 0.3) +
+  geom_ribbon(aes(ymin = year_avgMonth,
+                  ymax = year_avgMonth + if_else(diff_month > 0, diff_month, 0)),color ="grey", fill = "green", alpha = 0.3)+ theme(aspect.ratio=0.5) + theme(axis.text.x= element_text(size=5)) +
+  scale_x_discrete(labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ geom_line(color="blue")
+```
+
+```{r}
+bike_filtered_week <- bike %>%
+                  filter(year %in% c(2015: 2020)) %>%
+                  group_by(year, week) %>%
+                  summarise(avgWeek_filtered_week=mean(bikes_hired))
+
+bike_weekly_average <- bike_filtered_week %>%
+                  filter(year %in% c(2015: 2019)) %>%
+                  group_by(week) %>%
+                  summarise(avgWeek_weekly_average=mean(avgWeek_filtered_week)) 
+
+bike_joined_full <- left_join(bike_filtered_week, bike_weekly_average, by = "week")
+
+
+bike_joined_full_2 <- bike_joined_full %>%
+  mutate(excessrentalspercent = (avgWeek_filtered_week - avgWeek_weekly_average)*100/avgWeek_weekly_average) 
+```
+
+```{r}
+ggplot(bike_joined_full_2, aes(x=week, y=excessrentalspercent)) + 
+  labs(title= "Weekly Changes in TFL Bike Rentals", subtitle=" % changes from weekly averages calculated between 2015-2019", x="week", y=NULL, caption="Source: TfL, London Data Store") +
+  facet_wrap(~year)+ geom_line(fill="black") +
+  theme_minimal() +
+  geom_ribbon(aes(ymin = excessrentalspercent - if_else(excessrentalspercent < 0, excessrentalspercent, 0),
+                  ymax = excessrentalspercent), color ="grey", fill = "red", alpha = 0.3) +
+  geom_ribbon(aes(ymin = excessrentalspercent,
+                  ymax = excessrentalspercent - if_else(excessrentalspercent > 0, excessrentalspercent, 0)),color ="grey", fill = "green", alpha = 0.3) + 
+   scale_x_discrete(limits = c(13, 26, 39, 53)) +
+  geom_rect(xmin=13, xmax=26, ymin=-150, ymax=150, fill="grey", alpha=0.01) +geom_rect(xmin=39, xmax=52,ymin=-150, ymax=150,
+                                                                                          fill="grey", alpha=0.01) +
+  geom_rug(sides="b", aes(colour=ifelse(excessrentalspercent > 0, "red", "green")), alpha=0.2) +
+  theme(legend.position='none') +
+  scale_y_continuous(labels = function(x) paste0(x, "%"))
 ```
 
 For both of these graphs, you have to calculate the expected number of rentals per week or month between 2015-2019 and then, see how each week/month of 2020 compares to the expected rentals. Think of the calculation `excess_rentals = actual_rentals - expected_rentals`. 
 
 Should you use the mean or the median to calculate your expected rentals? Why?
 
-In creating your plots, you may find these links useful:
-
-- https://ggplot2.tidyverse.org/reference/geom_ribbon.html
-- https://ggplot2.tidyverse.org/reference/geom_tile.html 
-- https://ggplot2.tidyverse.org/reference/geom_rug.html
-
-
-# Deliverables
-
-As usual, there is a lot of explanatory text, comments, etc. You do not need these, so delete them and produce a stand-alone document that you could share with someone. Knit the edited and completed R Markdown file as an HTML document (use the "Knit" button at the top of the script editor window) and upload it to Canvas.
 
 # Details
 
-- Who did you collaborate with: TYPE NAMES HERE
-- Approximately how much time did you spend on this problem set: ANSWER HERE
-- What, if anything, gave you the most trouble: ANSWER HERE
-
-
-**Please seek out help when you need it,** and remember the [15-minute rule](https://mam2021.netlify.app/syllabus/#the-15-minute-rule){target=_blank}. You know enough R (and have enough examples of code from class and your readings) to be able to do this. If you get stuck, ask for help from others, post a question on Slack-- and remember that I am here to help too!  
-
-> As a true test to yourself, do you understand the code you submitted and are you able to explain it to someone else? 
-
-
-# Rubric
-
-Check minus (1/5): Displays minimal effort. Doesn't complete all components. Code is poorly written and not documented. Uses the same type of plot for each graph, or doesn't use plots appropriate for the variables being analyzed. 
-
-Check (3/5): Solid effort. Hits all the elements. No clear mistakes. Easy to follow (both the code and the output). 
-
-Check plus (5/5): Finished all components of the assignment correctly and addressed both challenges. Code is well-documented (both self-documented and with additional comments as necessary). Used tidyverse, instead of base R. Graphs and tables are properly labelled. Analysis is clear and easy to follow, either because graphs are labeled clearly or you've written additional text to describe how you interpret the output.
+- Who did you collaborate with: Matias, Philipp, Alex, Sena, Shengwei, Linda
+- Approximately how much time did you spend on this problem set: 15 hours
+- What, if anything, gave you the most trouble: Styling the graphs, knitting
